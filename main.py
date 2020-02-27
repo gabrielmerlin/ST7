@@ -45,4 +45,8 @@ print(market)   # Cette table panda possède un multi-indice (sedol, date)
 
 # S&P 250
 
-#for t in range()
+for end_month_date, market_caps_at_month in market_caps.iterrows():
+    begin_month_date = end_month_date.replace(day=1)
+    prices_during_month = market.loc[(slice(None), slice(str(begin_month_date), str(end_month_date))), 'Close'].unstack(0)
+
+
