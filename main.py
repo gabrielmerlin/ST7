@@ -1,11 +1,10 @@
 # Import des données
 
 import json
-import yfinance as yf
-import numpy
 from numpy import nan
 import pandas as pd
 import date_formatting
+from datetime import datetime
 import cvxpy as cp
 
 # Chargement des données json
@@ -60,10 +59,3 @@ for end_month_date, market_caps_at_month in market_caps.items():
 SnP = pd.concat(SnP_per_month)
 print(SnP)
 
-w= cp.variable(4)
-SD=numpy.array([0.2],[0.15],[0.05],[0.001])
-SR=numpy.array([0.4],[0.35],[0.45],[0])
-rho=numpy.array([1,0.8,0.5,0],[0,8,1,0.2,0],[0.5,0.2,1,0],[0,0,0,1])
-mu=numpy.array([0],[0],[0],[0])
-for i in range(4):
-    mu[i][0]=SD[i][0]*SR[i][0]
