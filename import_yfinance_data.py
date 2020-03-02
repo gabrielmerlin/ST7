@@ -18,4 +18,4 @@ for value in data['Mapping']:
 market = pd.concat(market_list, keys=sedol_list).sort_index()
 #print(market)   # Cette table panda possède un multi-indice (sedol, date)
 
-market.to_json("data_yfinance.json")
+market.to_pickle("data_yfinance.pkl.gz", compression="gzip")

@@ -42,7 +42,10 @@ for value in data['Mapping']:
         sedol_list.append(value["Sedol"])
         i += 1
 market = pd.concat(market_list, keys=sedol_list).sort_index()
+print("Begin to load.")
+market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip")
 print(market)   # Cette table panda possède un multi-indice (sedol, date)
+
 
 # S&P 250
 t = 1
