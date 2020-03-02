@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import date_formatting
 from S_and_P_250 import SnP_250
-from index_50 import index_50_biggest
+from index_50 import index_50_biggest, index_50_smallest
 import matplotlib.pyplot as plt
 
 # Chargement des données json
@@ -37,10 +37,19 @@ market_caps = pd.DataFrame(dic)  # Cette table (ligne: sedol, colonne: date) pan
 market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
 
 # S&P 250
-#SnP = SnP_250(market_caps, market)
-SnP = index_50_biggest(market_caps, market)
+SnP = SnP_250(market_caps, market)
 print(SnP)
 SnP.plot()
+
+# Autres indices
+biggest_ind = index_50_biggest(market_caps, market_cap)
+print(biggest_ind)
+biggest_ind.plot()
+
+smallest_ind = index_50_smallest(market_caps, market_cap)
+print(smallest_ind)
+smallest_ind.plot()
+
 plt.show()
 
 
