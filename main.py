@@ -37,16 +37,6 @@ market_caps = pd.DataFrame(dic).fillna(0)   # Cette table (ligne: sedol, colonne
 
 market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
 
-price_day = market.loc[(slice(None), ['2020-01-29']), 'Close'].unstack(0)
-price_end_month = market.loc[(slice(None), ['2020-01-31']), 'Close'].unstack(0).loc['2020-01-31']
-print(price_end_month)
-print(market_caps[date(2020, 1, 31)])
-n_share_month = market_caps[date(2020, 1, 31)].dropna() / price_end_month
-print(n_share_month)
-snp_month_unreduced = n_share_month * price_day
-print(snp_month_unreduced.dropna(axis=1))
-print(snp_month_unreduced.agg('sum', axis="columns"))
-
 # S&P 250
 SnP_per_month = []
 for end_month_date, market_caps_at_month in market_caps.items():
@@ -54,7 +44,8 @@ for end_month_date, market_caps_at_month in market_caps.items():
     begin_month_date = end_month_date.replace(day=1)
 
     prices_during_month = market.loc[(slice(None), slice(str(begin_month_date), str(end_month_date))), 'Close'].unstack(0).sort_index()
-    prices_during_month.fillna(method='ffill', inplace=True, limit=7)
+    prices_during_month.fillna(method='ffill', inplace=True)
+    prices_during_month.fillna(method='bfill', inplace=True)
 
     if datetime.combine(end_month_date, datetime.min.time()) in prices_during_month.index.to_pydatetime() :
         price_end_month = prices_during_month.loc[str(end_month_date)]
