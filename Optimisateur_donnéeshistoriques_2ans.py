@@ -71,8 +71,13 @@ def optimisateur(mu_sigma_dic):
 
     return pd.DataFrame(d).stack().rename('Poids', axis='column')
 
-#def valeur_new_indice(d):
 
+#reconstitution du nouvel indice
+def valeur_new_indice(market,d):
+    value_new= d['Poigts']*market['Close']
+    value_new=value_new.reset_index()
+    value_new=value_new.groupby(['Date']).sum()
+    return(value_new)
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
@@ -80,3 +85,12 @@ if __name__ == "__main__":
     print("Estimation finie.")
     w_d = optimisateur(m_s_d)
     print(w_d)
+
+
+
+
+
+
+
+
+

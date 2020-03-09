@@ -24,3 +24,27 @@ prob.solve()
 #The optimal value for x is stored in `x.value`.
 print(w.value)
 
+I=numpy.zeros((4,4))
+for i in range(4):
+    I[i][i]=1
+
+Ones = numpy.array([[1],[1],[1],[1]])
+ 
+EW = (1/((numpy.dot(numpy.dot(numpy.transpose(Ones),I),Ones)[0])))*numpy.dot(I,Ones)
+
+
+def ERB(Lambda):
+    Lambdainv=numpy.linalg.inv(Lambda)
+    return (1/((numpy.dot(numpy.dot(numpy.transpose(Ones),Lambdainv),Ones)[0])))*numpy.dot(Lambdainv,Ones)
+
+def IV(Lambda):
+    Lambdainv=numpy.linalg.inv(Lambda)
+    return (1/((numpy.dot(numpy.dot(numpy.transpose(Ones),Lambdainv**2),Ones)[0])))*numpy.dot(Lambdainv**2,Ones)
+
+def MV(Sigma):
+    sigmainv=numpy.linalg.inv(Sigma)
+    return (1/((numpy.dot(numpy.dot(numpy.transpose(Ones),sigmainv),Ones)[0])))*numpy.dot(sigmainv,Ones)
+    
+lamb = numpy.zeros((4,4))
+for i in range(4):
+    lamb[i][i]=sigma[i][i]**(1/2)
