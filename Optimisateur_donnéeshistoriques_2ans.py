@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import cvxpy as cp
 import pandas as pd
 import json
@@ -9,6 +9,9 @@ data = json.load(data_file)
 market_cap = data['MarketCap']
 date_debut= datetime.datetime(2005,1,1)
 print(date_debut)
+
+market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+#print(market)
 
 def mean_covariance_matrix_over_time(market):
     """
@@ -21,22 +24,21 @@ def mean_covariance_matrix_over_time(market):
     rendements = rendements.unstack(0).sort_index()
 
     date_debut = datetime.datetime(2005, 1, 1)
-    print(date_debut)
     date_fin = datetime.datetime(2020, 2, 1)
 
     mu_sigma_dic = {}
 
-    while date_debut <= date_fin:
+    while date_debut < date_fin:
         # On parcourt chaque début de mois pour trouver une stratégie correspondante
-        yeard = date_debut.year-2
+        yeard = date_debut.year
         monthd = date_debut.month
         dayd = date_debut.day
 
         #determination des bornes des données historiques
-        debut = datetime.datetime(yeard, monthd, dayd)
+        debut = datetime.datetime(yeard - 2, monthd, dayd)
         fin = date_debut - datetime.timedelta(days=1)
 
-        rendements_periode = rendements.loc[slice(debut, fin)]
+        rendements_periode = rendements.loc[slice(str(debut), str(fin))]
 
         # calcul du vecteur des rendements à l'aide des données historiques
         mu = rendements_periode.mean()
@@ -47,53 +49,40 @@ def mean_covariance_matrix_over_time(market):
         mu_sigma_dic[date_debut] = mu, sigma
 
         if monthd<12:
-            date_debut=datetime.datetime(yeard, monthd+1, dayd)
+            date_debut = datetime.datetime(yeard, monthd + 1, dayd)
         else:
-            date_debut=datetime.datetime(yeard+1, 1, 1)
+            date_debut = datetime.datetime(yeard + 1, 1, 1)
 
     return mu_sigma_dic
 
-def optimasateur(market,data,sedol):
-    n=len (data)
-    d={}
-    date_debut=datetime.datetime(2005,1,1)
-    print(date_debut)
-    date_fin= datetime.datetime(2020,2,1)
-    while date_debut <= date_fin:#on parcours chaque début de mois pour trouver une stratégie correspondante
-        yeard=date_debut.year-2
-        monthd=date_debut.month
-        dayd=date_debut.day
-        #determination des bornes des données historiques
-        debut=datetime.datetime(yeard,monthd,dayd)
-        fin= date_debut-datetime.timedelta(days=1)
-        #creation a partir du tableau existant d'un tableau dans lequel les sedol sont en colonne
-        df=market.copy()
-        df=df.reset_index()
-        #table rendement à partir du tableau market original qui donne pour chaque date les rendements de chaque entreprise
-        rendement = (market['Close'] - (market['Close']).shift()) / (market['Close']).shift()
-        matrix=rendement.unstack(0)
-        #création de la matrice de covariance à l'aide des données historiques
-        matrix=matrix.loc[slice(debut,fin)]
-        sigma=matrix.cov()
-        #création d'un tableau regroupant la moyenne des rendements historiques par entreprise et sur deux ans
-        df['rendement'] = (df['Close'] - (df['Close']).shift()) / (df['Close']).shift()
-        colonnes = ['level_0','rendement']
-        df=df.loc[(df['Date']>=debut) &(df['Date']<=fin),colonnes]
-        df2= df.groupby(['level_0']).mean()
-        w = cp.Variable(len(df2))
-        mu_historique=df2['rendement'].to_numpy()
-        muprime=numpy.transpose(mu_historique)
+def optimisateur(mu_sigma_dic):
+    """
+    Cette fonction détermine un portefeuille en utilisant la méthode MVO
+
+    :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
+    :return: Dictionnaire associant à chaque date un tableau numpy contenant les poids de chaque actif
+    """
+    d = {}
+
+    for date in mu_sigma_dic:
+        mu, sigma = mu_sigma_dic[date]
+
+        w = cp.Variable(mu.size())
+        muprime = np.transpose(mu.to_numpy())
+
         objective = cp.Maximize(muprime * w)
+
         risk = cp.quad_form(w, sigma.to_numpy())
         constraints = [risk <= 0.1 ** 2]
         prob = cp.Problem(objective, constraints)
         prob.solve()
-        d[date_debut]= w.value
-        if monthd<12:
-            date_debut=datetime.datetime(yeard,monthd+1,dayd)
-        else:
-            date_debut=datetime.datetime(yeard+1,1,1)
+        d[date] = w.value
+
     return(d)
+
+m_s_d = mean_covariance_matrix_over_time(market)
+w_d = optimisateur(m_s_d)
+print(w_d)
 
 #def valeur_new_indice(d):
 
