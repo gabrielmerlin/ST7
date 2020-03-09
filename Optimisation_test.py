@@ -24,3 +24,4 @@ prob.solve()
 #The optimal value for x is stored in `x.value`.
 print(w.value)
 
+

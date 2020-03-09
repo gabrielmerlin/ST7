@@ -83,8 +83,13 @@ def optimisateur(mu_sigma_dic):
 m_s_d = mean_covariance_matrix_over_time(market)
 w_d = optimisateur(m_s_d)
 print(w_d)
+#reconstitution du nouvel indice
+def valeur_new_indice(market,d):
+    value_new= d['Poigts']*market['Close']
+    value_new=value_new.reset_index()
+    value_new=value_new.groupby(['Date']).sum()
+    return(value_new)
 
-#def valeur_new_indice(d):
 
 
 
