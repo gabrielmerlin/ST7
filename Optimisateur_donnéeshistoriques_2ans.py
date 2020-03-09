@@ -1,50 +1,21 @@
 import numpy as np
 import cvxpy as cp
 import pandas as pd
-import json
 import datetime
-
-from date_formatting import date_formate
-
-data_file = open("data_ST7MDS.json")
-data = json.load(data_file)
-
-unordonned_market_cap_evol = data['MarketCap']
-
-dic = {}
-
-for i in range(len(unordonned_market_cap_evol)):
-    date_i = date_formate(unordonned_market_cap_evol[i]['Date'][0])
-
-    unordonned_market_caps = unordonned_market_cap_evol[i]['MarketCap']
-
-    market_caps = {}
-
-    for j in range(len(unordonned_market_caps)):
-        sedol, market_cap = unordonned_market_caps[j]['Sedol'], unordonned_market_caps[j].get('MarketCap', 0)
-        market_caps[sedol] = market_cap
-
-    dic[date_i] = market_caps
-
-market_caps = pd.DataFrame(dic)
-
-
-date_debut= datetime.datetime(2005,1,1)
-
-market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
 
 def mean_covariance_matrix_over_time(market):
     """
-    Cette fonction estime pour chaque date mu et sigma
+    Cette fonction estime pour chaque date mu et sigma.
 
     :param market: Dataframe Panda contenant les données de marché
     :return: Dictionnaire associant à chaque date le couple mu, sigma
     """
-    rendements = (market['Close'] - market['Close'].shift()) / (market['Close'].shift())
-    rendements = rendements.unstack(0).sort_index()
+    prices = market['Close'].unstack(0).sort_index()
+    rendements = (prices - prices.shift(fill_value=np.nan)) / (prices.shift(fill_value=np.nan))
+    rendements = rendements.iloc[1:]
 
     date_debut = datetime.datetime(2005, 1, 1)
-    date_fin = datetime.datetime(2005, 2, 1)
+    date_fin = datetime.datetime(2020, 2, 1)
 
     mu_sigma_dic = {}
 
@@ -55,13 +26,10 @@ def mean_covariance_matrix_over_time(market):
         dayd = date_debut.day
 
         #determination des bornes des données historiques
-        debut = datetime.datetime(yeard - 3, monthd, dayd)
+        debut = datetime.datetime(yeard - 2, monthd, dayd)
         fin = date_debut - datetime.timedelta(days=1)
 
-        print(debut, fin)
-
-        rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1,how='all')
-        print(rendements_periode)
+        rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1, how='all').fillna(0)
 
         # calcul du vecteur des rendements à l'aide des données historiques
         mu = rendements_periode.mean()
@@ -69,24 +37,21 @@ def mean_covariance_matrix_over_time(market):
         #création de la matrice de covariance à l'aide des données historiques
         sigma = rendements_periode.cov().fillna(0)
 
-        print(sigma)
-
         mu_sigma_dic[date_debut] = mu, sigma
 
-        if monthd<12:
+        if monthd < 12:
             date_debut = datetime.datetime(yeard, monthd + 1, dayd)
         else:
             date_debut = datetime.datetime(yeard + 1, 1, 1)
 
     return mu_sigma_dic
 
-def optimisateur(mu_sigma_dic, market_caps):
+def optimisateur(mu_sigma_dic):
     """
     Cette fonction détermine un portefeuille en utilisant la méthode MVO
 
     :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
-    :param market_caps:
-    :return: Dictionnaire associant à chaque date un tableau numpy contenant les poids de chaque actif
+    :return: Serie Panda associant à chaque multi-indice (sedol, date) le poids convenable
     """
     d = {}
 
@@ -96,32 +61,22 @@ def optimisateur(mu_sigma_dic, market_caps):
         w = cp.Variable(mu.size)
         muprime = np.transpose(mu.to_numpy())
 
-        objective = cp.Maximize(muprime * w)
-
-        print(sigma.to_numpy().shape, mu.size)
-        print(np.linalg.matrix_rank(sigma))
+        objective = cp.Maximize(sum(muprime * w))
 
         risk = cp.quad_form(w, sigma.to_numpy())
-        constraints = [risk <= 0.2]
+        constraints = [risk <= 0.2, w >= 0., sum(w) == 1.]
         prob = cp.Problem(objective, constraints)
         prob.solve()
         d[date] = pd.Series(w.value, index=mu.index)
-        print(d[date])
 
-    return pd.DataFrame(d)
-
-m_s_d = mean_covariance_matrix_over_time(market)
-print("Estimation finie.")
-w_d = optimisateur(m_s_d, market_caps)
-print(w_d)
+    return pd.DataFrame(d).stack().rename('Poids', axis='column')
 
 #def valeur_new_indice(d):
 
 
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+    m_s_d = mean_covariance_matrix_over_time(market)
+    print("Estimation finie.")
+    w_d = optimisateur(m_s_d)
+    print(w_d)
