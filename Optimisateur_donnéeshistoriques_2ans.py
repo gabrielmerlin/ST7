@@ -20,12 +20,12 @@ def mean_covariance_matrix_over_time(market):
     mu_sigma_dic = {}
 
     while date_debut < date_fin:
-        # On parcourt chaque début de mois pour trouver une stratégie correspondante
+        # Parcourir chaque mois pour estimer les paramètres
         yeard = date_debut.year
         monthd = date_debut.month
         dayd = date_debut.day
 
-        #determination des bornes des données historiques
+        # Détermination des bornes des données historiques
         debut = datetime.datetime(yeard - 2, monthd, dayd)
         fin = date_debut - datetime.timedelta(days=1)
 
@@ -71,6 +71,32 @@ def optimisateur(mu_sigma_dic):
 
     return pd.DataFrame(d).stack().rename('Poids', axis='column')
 
+def optimisation_MVO(mu_sigma_dic):
+    """
+        Cette fonction détermine un portefeuille en utilisant la méthode MVO implémentée avec les formules exactes.
+
+        :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
+        :param risk_max : Valeur maximale pour le risque
+        :return: Serie Panda associant à chaque multi-indice (sedol, date) le poids convenable
+        """
+    w_dic = {}
+
+    for date in mu_sigma_dic:
+        mu, sigma = mu_sigma_dic[date]
+
+        try:
+            s_inv_mu = np.linalg.solve(sigma.to_numpy(), mu.to_numpy())
+            w = s_inv_mu / np.sum(s_inv_mu)
+            w_dic[date] = pd.Series(w, index=mu.index)
+            continue
+        except np.linalg.linalg.LinAlgError:
+            s_inv_mu = np.linalg.lstsq(sigma.to_numpy(), mu.to_numpy(), rcond=None)[0]
+            w = s_inv_mu / np.sum(s_inv_mu)
+            w_dic[date] = pd.Series(w, index=mu.index)
+            continue
+
+    return pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+
 
 #reconstitution du nouvel indice
 def valeur_new_indice(market,d):
@@ -83,14 +109,7 @@ if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
-    w_d = optimisateur(m_s_d)
+    #print(m_s_d)
+    w_d = optimisation_MVO(m_s_d)
     print(w_d)
-
-
-
-
-
-
-
-
 
