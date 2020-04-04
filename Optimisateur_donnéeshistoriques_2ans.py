@@ -99,11 +99,7 @@ def optimisation_MVO(mu_sigma_dic):
             w_dic[date] = pd.Series(w, index=mu.index)
             continue
 
-    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
-    indices = weights.index
-    indices.set_names('Date', level=1, inplace=True)
-
-    return weights
+    return pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
 
 def optimisation_MV(mu_sigma_dic):
     w_dic = {}
@@ -128,6 +124,27 @@ def optimisation_MV(mu_sigma_dic):
 
     return weights
 
+def optimisation_rob(mu_sigma_dict,lan,k):
+    w_d={}
+    for date in mu_sigma_dict:
+        mu,sigma=mu_sigma_dict[date]
+        w = cp.Variable(mu.size)
+        sigma=sigma.to_numpy()
+        n=len(sigma)
+        omega=np.zeros((n,n))
+        for i in range(n):
+            omega[i][i]=sigma[i][i]
+        risk = cp.quad_form(w, omega)
+        risk = cp.multiply(lan/2, risk)
+        error = cp.norm(np.linalg.cholesky(omega) * w, 2)   # √ w.t * omega * w
+        error=cp.multiply(k,error)
+        objective = cp.Maximize((mu.to_numpy() * w) - risk - error)
+        constraints = [w >= 0, cp.sum(w) == 1]
+        prob = cp.Problem(objective, constraints)
+        prob.solve()
+        w_d[date] = pd.Series(w.value, index=mu.index)
+    return pd.DataFrame(w_d).stack().rename('Poids', axis='column')
+
 
 #reconstitution du nouvel indice
 def valeur_new_indice(market,d):
@@ -135,6 +152,9 @@ def valeur_new_indice(market,d):
     value_new = value_new.reset_index()
     value_new = value_new.groupby(['Date']).sum()
     return(value_new)
+
+lan = 4
+k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
