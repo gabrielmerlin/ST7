@@ -99,7 +99,11 @@ def optimisation_MVO(mu_sigma_dic):
             w_dic[date] = pd.Series(w, index=mu.index)
             continue
 
-    return pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    indices = weights.index
+    indices.set_names('Date', level=1, inplace=True)
+
+    return weights
 
 def optimisation_MV(mu_sigma_dic):
     w_dic = {}
@@ -129,15 +133,17 @@ def optimisation_rob(mu_sigma_dict,lan,k):
     for date in mu_sigma_dict:
         mu, sigma = mu_sigma_dict[date]
         w = cp.Variable(mu.size)
-        sigma=sigma.to_numpy()
-        n=len(sigma)
-        omega=np.zeros((n,n))
+        sigma = sigma.to_numpy()
+        n = len(sigma)
+        omega = np.zeros((n, n))
         for i in range(n):
-            omega[i][i]=sigma[i][i]
+            omega[i][i] = sigma[i][i]
+            if omega[i][i] < 10**(-6):
+                print(omega[i][i])
         risk = cp.quad_form(w, omega)
         risk = cp.multiply(lan/2, risk)
         error = cp.norm(np.linalg.cholesky(omega) * w, 2)   # √ w.t * omega * w
-        error=cp.multiply(k,error)
+        error = cp.multiply(k, error)
         objective = cp.Maximize((mu.to_numpy() * w) - risk - error)
         constraints = [w >= 0, cp.sum(w) == 1]
         prob = cp.Problem(objective, constraints)
@@ -167,7 +173,7 @@ if __name__ == "__main__":
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
     #print(m_s_d)
-    w_d = optimisation_MV(m_s_d)
+    w_d = optimisation_rob(m_s_d, lan, k)
     print(w_d)
 
     valeur_new_indice(market, w_d)
