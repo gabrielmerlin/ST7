@@ -53,7 +53,7 @@ def optimisateur(mu_sigma_dic):
     :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
     :return: Serie Panda associant à chaque multi-indice (sedol, date) le poids convenable
     """
-    d = {}
+    w_dic = {}
 
     for date in mu_sigma_dic:
         mu, sigma = mu_sigma_dic[date]
@@ -67,7 +67,7 @@ def optimisateur(mu_sigma_dic):
         constraints = [risk <= 0.2, w >= 0., sum(w) == 1.]
         prob = cp.Problem(objective, constraints)
         prob.solve()
-        d[date] = pd.Series(w.value, index=mu.index)
+        w_dic[date] = pd.Series(w.value, index=mu.index)
 
     weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
     indices = weights.index
@@ -132,22 +132,34 @@ def optimisation_rob(mu_sigma_dict,lan,k):
     w_d={}
     for date in mu_sigma_dict:
         mu, sigma = mu_sigma_dict[date]
-        w = cp.Variable(mu.size)
+
         sigma = sigma.to_numpy()
         n = len(sigma)
+
         omega = np.zeros((n, n))
-        for i in range(n):
+        omega_sqrt = np.zeros((n, n))   # omega étant diagonale, omega_sqrt est sa racine carrée
+
+        i = 0
+        while i < n:
             omega[i][i] = sigma[i][i]
-            if omega[i][i] < 10**(-6):
-                print(omega[i][i])
+            omega_sqrt[i][i] = np.sqrt(sigma[i][i])
+            if sigma[i][i] == 0 and mu[i] == 0:
+                # il faut éliminer la variable
+                i -= 1
+                n -= 1
+            else:
+                i += 1
+
+        w = cp.Variable(n)
+
         risk = cp.quad_form(w, omega)
         risk = cp.multiply(lan/2, risk)
-        error = cp.norm(np.linalg.cholesky(omega) * w, 2)   # √ w.t * omega * w
+        error = cp.norm(omega_sqrt * w, 2)   # √ w.t * omega * w
         error = cp.multiply(k, error)
         objective = cp.Maximize((mu.to_numpy() * w) - risk - error)
         constraints = [w >= 0, cp.sum(w) == 1]
         prob = cp.Problem(objective, constraints)
-        prob.solve()
+        prob.solve(verbose=True)
         w_d[date] = pd.Series(w.value, index=mu.index)
 
     weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
@@ -158,23 +170,24 @@ def optimisation_rob(mu_sigma_dict,lan,k):
 
 
 #reconstitution du nouvel indice
-def valeur_new_indice(market,d):
-    value_new = d * market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
-    value_new = value_new.reset_index()
-    value_new = value_new.groupby(['Date']).sum()
-    return(value_new)
+def valeur_new_indice(market, d):
+    price = pd.DataFrame(market['Close'].loc[(slice(None), slice('2005-01-01', '2020-01-01'))]).fillna(method='pad').fillna(method='backfill')
+    weight_price = price.join(d, how='inner')
+    value_new = weight_price.prod(axis=1)
+    return value_new.sum(level=1)
 
 lan = 4
 k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-    print(market)
+    print(market['Close'].loc[(slice(None), slice('2005-01-01', '2020-01-01'))])
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
     #print(m_s_d)
-    w_d = optimisation_rob(m_s_d, lan, k)
+    w_d = optimisateur(m_s_d)
     print(w_d)
 
-    valeur_new_indice(market, w_d)
+    print(valeur_new_indice(market, w_d))
+
 
