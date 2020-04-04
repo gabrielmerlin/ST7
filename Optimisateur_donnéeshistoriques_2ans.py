@@ -91,12 +91,29 @@ def optimisation_MVO(mu_sigma_dic):
         try:
             s_inv_mu = np.linalg.solve(sigma.to_numpy(), mu.to_numpy())
             w = s_inv_mu / np.sum(s_inv_mu)
-            w_dic[date] = pd.Series(w, index=mu.index)
+            #dateprime1=datetime.datetime.strptime(date,'%Y-%m-%d')
+            dateprime1=date
+            dateprime2=dateprime1+datetime.timedelta(days=1)
+            while (dateprime1.month==dateprime2.month):
+                date_str=dateprime1.strftime('%Y-%m-%d')
+                w_dic[dateprime1] = pd.Series(w, index=mu.index)
+                dateprime1=dateprime2
+                dateprime2=dateprime1+datetime.timedelta(days=1)
+            w_dic[dateprime1] = pd.Series(w, index=mu.index)
             continue
         except np.linalg.linalg.LinAlgError:
             s_inv_mu = np.linalg.lstsq(sigma.to_numpy(), mu.to_numpy(), rcond=None)[0]
             w = s_inv_mu / np.sum(s_inv_mu)
-            w_dic[date] = pd.Series(w, index=mu.index)
+            dateprime1=date
+            dateprime2=dateprime1+datetime.timedelta(days=1)
+            while dateprime1.month==dateprime2.month:
+                #date_str=dateprime1.strftime('%Y-%m-%d')
+                w_dic[dateprime1] = pd.Series(w, index=mu.index)
+                dateprime1=dateprime2
+                dateprime2=dateprime1+datetime.timedelta(days=1)
+            #date_str=dateprime1.strftime('%Y-%m-%d')
+            w_dic[dateprime1] = pd.Series(w, index=mu.index)
+            #w_dic[date] = pd.Series(w, index=mu.index)
             continue
 
     weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
@@ -114,14 +131,34 @@ def optimisation_MV(mu_sigma_dic):
         try:
             s_inv_mu = np.linalg.solve(sigma.to_numpy(), vect)
             w = s_inv_mu / np.sum(s_inv_mu)
-            w_dic[date] = pd.Series(w, index=mu.index)
+            for i in range(len(w)):
+                if w[i]<0:
+                    w[i]=0
+            dateprime1=date
+            dateprime2=dateprime1+datetime.timedelta(days=1)
+            while (dateprime1.month==dateprime2.month):
+                date_str=dateprime1.strftime('%Y-%m-%d')
+                w_dic[dateprime1] = pd.Series(w, index=mu.index)
+                dateprime1=dateprime2
+                dateprime2=dateprime1+datetime.timedelta(days=1)
+            w_dic[dateprime1] = pd.Series(w, index=mu.index)
             continue
         except np.linalg.linalg.LinAlgError:
             s_inv_mu = np.linalg.lstsq(sigma.to_numpy(), vect, rcond=None)[0]
             w = s_inv_mu / np.sum(s_inv_mu)
-            w_dic[date] = pd.Series(w, index=mu.index)
+            for i in range(len(w)):
+                if w[i]<0:
+                    w[i]=0
+            dateprime1=date
+            dateprime2=dateprime1+datetime.timedelta(days=1)
+            while (dateprime1.month==dateprime2.month):
+                date_str=dateprime1.strftime('%Y-%m-%d')
+                w_dic[dateprime1] = pd.Series(w, index=mu.index)
+                dateprime1=dateprime2
+                dateprime2=dateprime1+datetime.timedelta(days=1)
+            w_dic[dateprime1] = pd.Series(w, index=mu.index)
+            #w_dic[date] = pd.Series(w, index=mu.index)
             continue
-
     weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
     indices = weights.index
     indices.set_names('Date', level=1, inplace=True)
@@ -160,8 +197,8 @@ def optimisation_rob(mu_sigma_dict,lan,k):
 #reconstitution du nouvel indice
 def valeur_new_indice(market,d):
     value_new = d * market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
-    #value_new = value_new.reset_index()
-    #value_new = value_new.groupby(['Date']).sum()
+    value_new = value_new.reset_index()
+    value_new = value_new.groupby(['Date']).sum()
     return(value_new)
 
 lan = 4
@@ -169,15 +206,14 @@ k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-    m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
+    #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
     #print(m_s_d)
-    w_d = optimisation_MVO(m_s_d)
-    print(w_d*m)
-    #d=valeur_new_indice(market, w_d)
-    #print(d)
-   # print(mr.VAR(d,0.95))
+    w_d = optimisation_MV(m_s_d)
+    print(w_d)
+    d=valeur_new_indice(market, w_d)
+    print(mr.VAR(d,0.95))
     #print(type(mr.CVAR(d,0.95)))
 
 

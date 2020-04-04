@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import datetime
 def volatility(indice):
     return(indice.std())
 def rendement_moyen(indice):
@@ -19,6 +20,8 @@ def CVAR(indice,alpha):# ici on utilise plûtot en entrée les rendements des in
     var=VAR(indice,alpha)
     cvar=[indice[indice[0]>var]].mean()
     return(cvar)
+d=datetime.datetime(2020,2,29)
+#print(d+datetime.timedelta(days=1))
 
 
 
