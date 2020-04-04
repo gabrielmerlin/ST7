@@ -69,7 +69,11 @@ def optimisateur(mu_sigma_dic):
         prob.solve()
         d[date] = pd.Series(w.value, index=mu.index)
 
-    return pd.DataFrame(d).stack().rename('Poids', axis='column')
+    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    indices = weights.index
+    indices.set_names('Date', level=1, inplace=True)
+
+    return weights
 
 def optimisation_MVO(mu_sigma_dic):
     """
@@ -95,7 +99,11 @@ def optimisation_MVO(mu_sigma_dic):
             w_dic[date] = pd.Series(w, index=mu.index)
             continue
 
-    return pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    indices = weights.index
+    indices.set_names('Date', level=1, inplace=True)
+
+    return weights
 
 def optimisation_MV(mu_sigma_dic):
     w_dic = {}
@@ -113,21 +121,29 @@ def optimisation_MV(mu_sigma_dic):
             w = s_inv_mu / np.sum(s_inv_mu)
             w_dic[date] = pd.Series(w, index=mu.index)
             continue
-    return pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+
+    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    indices = weights.index
+    indices.set_names('Date', level=1, inplace=True)
+
+    return weights
 
 
 #reconstitution du nouvel indice
 def valeur_new_indice(market,d):
-    value_new= d['Poids']*market['Close']
-    value_new=value_new.reset_index()
-    value_new=value_new.groupby(['Date']).sum()
+    value_new = d * market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
+    value_new = value_new.reset_index()
+    value_new = value_new.groupby(['Date']).sum()
     return(value_new)
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+    print(market)
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
     #print(m_s_d)
     w_d = optimisation_MV(m_s_d)
     print(w_d)
+
+    valeur_new_indice(market, w_d)
 
