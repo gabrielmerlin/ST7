@@ -97,10 +97,28 @@ def optimisation_MVO(mu_sigma_dic):
 
     return pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
 
+def optimisation_MV(mu_sigma_dic):
+    w_dic = {}
+    for date in mu_sigma_dic:
+        mu, sigma = mu_sigma_dic[date]
+        n=len(sigma)
+        vect=np.ones(n)
+        try:
+            s_inv_mu = np.linalg.solve(sigma.to_numpy(), vect)
+            w = s_inv_mu / np.sum(s_inv_mu)
+            w_dic[date] = pd.Series(w, index=mu.index)
+            continue
+        except np.linalg.linalg.LinAlgError:
+            s_inv_mu = np.linalg.lstsq(sigma.to_numpy(), vect, rcond=None)[0]
+            w = s_inv_mu / np.sum(s_inv_mu)
+            w_dic[date] = pd.Series(w, index=mu.index)
+            continue
+    return pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+
 
 #reconstitution du nouvel indice
 def valeur_new_indice(market,d):
-    value_new= d['Poigts']*market['Close']
+    value_new= d['Poids']*market['Close']
     value_new=value_new.reset_index()
     value_new=value_new.groupby(['Date']).sum()
     return(value_new)
@@ -110,6 +128,6 @@ if __name__ == "__main__":
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
     #print(m_s_d)
-    w_d = optimisation_MVO(m_s_d)
+    w_d = optimisation_MV(m_s_d)
     print(w_d)
 

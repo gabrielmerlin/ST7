@@ -1,15 +1,16 @@
 import numpy
 import cvxpy as cp
 w= cp.Variable(4)
-print(w)
+print(w.value)
 SD=numpy.array([[0.2],[0.15],[0.05],[0.001]])
 SR=numpy.array([[0.4],[0.35],[0.45],[0]])
 rho=numpy.array([[1.,0.8,0.5,0],[0.8,1,0.2,0],[0.5,0.2,1,0],[0,0,0,1]])
 mu=numpy.array([[0],[0],[0],[0]],float)
 d=numpy.transpose(mu)
+print(d)
 for i in range(4):
     mu[i][0]=SD[i][0]*SR[i][0]
-    muprime=numpy.transpose(mu)
+muprime=numpy.transpose(mu)
 d=numpy.dot(SD,numpy.transpose(SD))
 sigma=numpy.zeros((4,4))
 for i in range(4):
