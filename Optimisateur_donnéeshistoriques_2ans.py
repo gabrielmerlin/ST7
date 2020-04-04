@@ -127,7 +127,7 @@ def optimisation_MV(mu_sigma_dic):
 def optimisation_rob(mu_sigma_dict,lan,k):
     w_d={}
     for date in mu_sigma_dict:
-        mu,sigma=mu_sigma_dict[date]
+        mu, sigma = mu_sigma_dict[date]
         w = cp.Variable(mu.size)
         sigma=sigma.to_numpy()
         n=len(sigma)
@@ -143,7 +143,12 @@ def optimisation_rob(mu_sigma_dict,lan,k):
         prob = cp.Problem(objective, constraints)
         prob.solve()
         w_d[date] = pd.Series(w.value, index=mu.index)
-    return pd.DataFrame(w_d).stack().rename('Poids', axis='column')
+
+    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    indices = weights.index
+    indices.set_names('Date', level=1, inplace=True)
+
+    return weights
 
 
 #reconstitution du nouvel indice
