@@ -73,12 +73,12 @@ def optimisateur(mu_sigma_dic):
 
 def optimisation_MVO(mu_sigma_dic):
     """
-        Cette fonction détermine un portefeuille en utilisant la méthode MVO implémentée avec les formules exactes.
+    Cette fonction détermine un portefeuille en utilisant la méthode MVO implémentée avec les formules exactes.
 
-        :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
-        :param risk_max : Valeur maximale pour le risque
-        :return: Serie Panda associant à chaque multi-indice (sedol, date) le poids convenable
-        """
+    :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
+    :param risk_max : Valeur maximale pour le risque
+    :return: Serie Panda associant à chaque multi-indice (sedol, date) le poids convenable
+    """
     w_dic = {}
 
     for date in mu_sigma_dic:
