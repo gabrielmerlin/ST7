@@ -23,6 +23,9 @@ def CVAR(indice,alpha):# ici on utilise plûtot en entrée les rendements des in
 d=datetime.datetime(2020,2,29)
 #print(d+datetime.timedelta(days=1))
 
+def maximum_drawdown(indice):
+    return (indice.max()-indice.min())
+
 
 
 

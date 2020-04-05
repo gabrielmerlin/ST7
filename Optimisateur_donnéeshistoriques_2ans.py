@@ -196,7 +196,7 @@ def optimisation_rob(mu_sigma_dict,lan,k):
 
 #reconstitution du nouvel indice
 def valeur_new_indice(market,d):
-    value_new = d * market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
+    value_new = d * market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))].fillna(method='pad').fillna(method='backfill')
     value_new = value_new.reset_index()
     value_new = value_new.groupby(['Date']).sum()
     return(value_new)
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     w_d = optimisation_MV(m_s_d)
     print(w_d)
     d=valeur_new_indice(market, w_d)
-    print(mr.VAR(d,0.95))
+    print(d)
     #print(type(mr.CVAR(d,0.95)))
 
 
