@@ -17,7 +17,7 @@ def mean_covariance_matrix_over_time(market):
     rendements = rendements.iloc[1:]
 
     date_debut = datetime.datetime(2005, 1, 1)
-    date_fin = datetime.datetime(2006, 2, 1)
+    date_fin = datetime.datetime(2020, 2, 1)
 
     mu_sigma_dic = {}
 
@@ -185,7 +185,7 @@ def optimisation_rob(mu_sigma_dict,lan,k):
             if mu[i] == 0:
                 zero_indices.append(i)
 
-        risk = cp.quad_form(w, omega)
+        risk = cp.quad_form(w,sigma)
         risk = cp.multiply(lan/2, risk)
         error = cp.norm(omega_sqrt * w, 2)   # √ w.t * omega * w
         error = cp.multiply(k, error)
@@ -218,10 +218,12 @@ if __name__ == "__main__":
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
     #print(m_s_d)
-    w_d = optimisation_rob(m_s_d, lan, k)
+    w_d = optimisation_MV(m_s_d)
     print(w_d)
     d = valeur_new_indice(market, w_d)
-    print(d.plot())
+    rend=mr.rendement_moyen(d)
+    print(rend)
+    rend.plot()
     plt.show()
     #print(mr.VAR(d, 0.95))
     #print(type(mr.CVAR(d,0.95)))

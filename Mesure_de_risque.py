@@ -4,9 +4,11 @@ import datetime
 def volatility(indice):
     return(indice.std())
 def rendement_moyen(indice):
-    rendements = (indice - indice.shift(fill_value=np.nan)) / (indice.shift(fill_value=np.nan))
+    #rendements = (indice - indice.shift(fill_value=np.nan)) / (indice.shift(fill_value=np.nan))
+    rendements=indice.diff()/indice
     rendements = rendements.iloc[1:]
-    return(rendements.mean())
+    rendements=rendements.dropna()
+    return(rendements)
 def shape_ration(indice,Rf):
     SR=(rendement_moyen(indice)-Rf)/volatility(indice)
     return(SR)
