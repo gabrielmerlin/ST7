@@ -1,34 +1,14 @@
 # Import des données
 
-import json
 import pandas as pd
 from S_and_P_250 import SnP_250
 from index_50 import index_50_biggest, index_50_smallest
+from import_market_caps import import_data_from_json
 import matplotlib.pyplot as plt
 
 # Chargement des données json
 
-data_file = open("data_ST7MDS.json")
-data = json.load(data_file)
-
-unordonned_market_cap_evol = data['MarketCap']
-
-dic = {}
-
-for i in range(len(unordonned_market_cap_evol)):
-    date_i = pd.to_datetime(unordonned_market_cap_evol[i]['Date'][0])
-
-    unordonned_market_caps = unordonned_market_cap_evol[i]['MarketCap']
-
-    market_caps = {}
-
-    for j in range(len(unordonned_market_caps)):
-        sedol, market_cap = unordonned_market_caps[j]['Sedol'], unordonned_market_caps[j].get('MarketCap', 0)
-        market_caps[sedol] = market_cap
-
-    dic[date_i] = market_caps
-
-market_caps = pd.DataFrame(dic)   # Cette table (ligne: sedol, colonne: date) panda contient les marketcaps
+market_caps, rend_sans_risque = import_data_from_json()
 print(market_caps)
 
 # Chargement des données yfinance
