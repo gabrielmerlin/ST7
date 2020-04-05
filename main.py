@@ -2,7 +2,6 @@
 
 import json
 import pandas as pd
-import date_formatting
 from S_and_P_250 import SnP_250
 from index_50 import index_50_biggest, index_50_smallest
 import matplotlib.pyplot as plt
@@ -17,7 +16,7 @@ unordonned_market_cap_evol = data['MarketCap']
 dic = {}
 
 for i in range(len(unordonned_market_cap_evol)):
-    date_i = date_formatting.date_formate(unordonned_market_cap_evol[i]['Date'][0])
+    date_i = pd.to_datetime(unordonned_market_cap_evol[i]['Date'][0])
 
     unordonned_market_caps = unordonned_market_cap_evol[i]['MarketCap']
 

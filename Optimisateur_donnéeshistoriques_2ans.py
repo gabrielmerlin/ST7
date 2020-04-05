@@ -82,7 +82,6 @@ def optimisation_MVO(mu_sigma_dic):
     Cette fonction détermine un portefeuille en utilisant la méthode MVO implémentée avec les formules exactes.
 
     :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
-    :param risk_max : Valeur maximale pour le risque
     :return: Serie Panda associant à chaque multi-indice (sedol, date) le poids convenable
     """
     w_dic = {}
@@ -96,11 +95,11 @@ def optimisation_MVO(mu_sigma_dic):
             #dateprime1=datetime.datetime.strptime(date,'%Y-%m-%d')
             dateprime1 = date
             dateprime2 = dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1.strftime('%Y-%m-%d')
+            while (dateprime1.month == dateprime2.month):
+                date_str = dateprime1.strftime('%Y-%m-%d')
                 w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
+                dateprime1 = dateprime2
+                dateprime2 = dateprime1 + datetime.timedelta(days=1)
             w_dic[dateprime1] = pd.Series(w, index=mu.index)
             continue
         except np.linalg.linalg.LinAlgError:
@@ -111,8 +110,8 @@ def optimisation_MVO(mu_sigma_dic):
             while dateprime1.month==dateprime2.month:
                 #date_str=dateprime1.strftime('%Y-%m-%d')
                 w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
+                dateprime1 = dateprime2
+                dateprime2 = dateprime1 + datetime.timedelta(days=1)
             #date_str=dateprime1.strftime('%Y-%m-%d')
             w_dic[dateprime1] = pd.Series(w, index=mu.index)
             #w_dic[date] = pd.Series(w, index=mu.index)
@@ -240,8 +239,7 @@ if __name__ == "__main__":
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
-    from
-    w_d = optimisation_MV(m_s_d)
+    w_d = optimisation_MVO(m_s_d)
     print(w_d)
     d = valeur_new_indice(market, w_d, 1000)
     print(d)
