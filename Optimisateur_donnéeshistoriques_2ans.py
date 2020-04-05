@@ -3,6 +3,8 @@ import cvxpy as cp
 import pandas as pd
 import datetime
 import Mesure_de_risque as mr
+import matplotlib.pyplot as plt
+
 def mean_covariance_matrix_over_time(market):
     """
     Cette fonction estime pour chaque date mu et sigma.
@@ -15,7 +17,7 @@ def mean_covariance_matrix_over_time(market):
     rendements = rendements.iloc[1:]
 
     date_debut = datetime.datetime(2005, 1, 1)
-    date_fin = datetime.datetime(2020, 2, 1)
+    date_fin = datetime.datetime(2006, 2, 1)
 
     mu_sigma_dic = {}
 
@@ -69,7 +71,7 @@ def optimisateur(mu_sigma_dic):
         prob.solve()
         d[date] = pd.Series(w.value, index=mu.index)
 
-    weights = pd.DataFrame(w).stack().rename('Poids', axis='column')
+    weights = pd.DataFrame(d).stack().rename('Poids', axis='column')
     indices = weights.index
     indices.set_names('Date', level=1, inplace=True)
 
@@ -219,7 +221,8 @@ if __name__ == "__main__":
     w_d = optimisation_rob(m_s_d, lan, k)
     print(w_d)
     d = valeur_new_indice(market, w_d)
-    print(d)
+    print(d.plot())
+    plt.show()
     #print(mr.VAR(d, 0.95))
     #print(type(mr.CVAR(d,0.95)))
 
