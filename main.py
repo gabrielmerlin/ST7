@@ -46,6 +46,15 @@ SnP = SnP_250(market_caps, market)
 print(SnP)
 SnP.plot()
 
+from Optimisateur_donnéeshistoriques_2ans import *
+
+m_s_d = mean_covariance_matrix_over_time(market)
+print("Estimation finie.")
+w_d = optimisation_MV(m_s_d)
+d = valeur_new_indice(market, w_d) * 1000
+print(d)
+d.plot()
+
 plt.show()
 
 # Autres indices

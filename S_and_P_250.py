@@ -20,7 +20,7 @@ def SnP_250(market_caps, market):
         prices_during_month.fillna(method='ffill', inplace=True)
         prices_during_month.fillna(method='bfill', inplace=True)
 
-        if datetime.combine(end_month_date, datetime.min.time()) in prices_during_month.index.to_pydatetime() :
+        if datetime.combine(end_month_date, datetime.min.time()) in prices_during_month.index.to_pydatetime():
             price_end_month = prices_during_month.loc[str(end_month_date)]
             N_share_month = market_caps_at_month / price_end_month
 

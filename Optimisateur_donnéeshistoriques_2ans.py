@@ -75,7 +75,7 @@ def optimisateur(mu_sigma_dic):
     indices = weights.index
     indices.set_names('Date', level=1, inplace=True)
 
-    return weights
+    return weights.fillna(0)
 
 def optimisation_MVO(mu_sigma_dic):
     """
@@ -94,8 +94,8 @@ def optimisation_MVO(mu_sigma_dic):
             s_inv_mu = np.linalg.solve(sigma.to_numpy(), mu.to_numpy())
             w = s_inv_mu / np.sum(s_inv_mu)
             #dateprime1=datetime.datetime.strptime(date,'%Y-%m-%d')
-            dateprime1=date
-            dateprime2=dateprime1+datetime.timedelta(days=1)
+            dateprime1 = date
+            dateprime2 = dateprime1+datetime.timedelta(days=1)
             while (dateprime1.month==dateprime2.month):
                 date_str=dateprime1.strftime('%Y-%m-%d')
                 w_dic[dateprime1] = pd.Series(w, index=mu.index)
@@ -122,14 +122,14 @@ def optimisation_MVO(mu_sigma_dic):
     indices = weights.index
     indices.set_names('Date', level=1, inplace=True)
 
-    return weights
+    return weights.fillna(0)
 
 def optimisation_MV(mu_sigma_dic):
     w_dic = {}
     for date in mu_sigma_dic:
         mu, sigma = mu_sigma_dic[date]
-        n=len(sigma)
-        vect=np.ones(n)
+        n = len(sigma)
+        vect = np.ones(n)
         try:
             s_inv_mu = np.linalg.solve(sigma.to_numpy(), vect)
             w = s_inv_mu / np.sum(s_inv_mu)
@@ -165,7 +165,7 @@ def optimisation_MV(mu_sigma_dic):
     indices = weights.index
     indices.set_names('Date', level=1, inplace=True)
 
-    return weights
+    return weights.fillna(0)
 
 def optimisation_rob(mu_sigma_dict,lan,k):
     w_d={}
@@ -199,30 +199,57 @@ def optimisation_rob(mu_sigma_dict,lan,k):
     indices = weights.index
     indices.set_names('Date', level=1, inplace=True)
 
-    return weights
+    return weights.fillna(0)
 
 
 #reconstitution du nouvel indice
-def valeur_new_indice(market, d):
-    weight_prices = pd.DataFrame(d).join(market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))])
-    weight_prices = weight_prices.fillna(method='pad').fillna(method='backfill')
-    value_new = weight_prices.prod(axis=1)
-    #value_new = value_new.reset_index()
-    value_new = value_new.groupby(['Date']).sum()
-    return(value_new)
+def valeur_new_indice(market, weights, value0):
+    """
+    Cette fonction détermine les valeurs associées au nouvel indice donné en paramètre.
+
+    :param market: DataFrame contenant les prix à la fermeture en fonction du sedol et de la date
+    :param weights: Serie contenant les poids alloués à chaque actif mensuellement
+    :param value0: Valeur initiale du portefeuille
+    :return: Serie associant à chaque date la valeur du portefeuille
+    """
+
+    # Formatage avec les dates en lignes et les sedols en colonne
+    u_weights = weights.unstack(0)
+    begin_date = u_weights.first_valid_index()
+    end_date = u_weights.last_valid_index()
+
+    prices = market['Close'].loc[(slice(None), slice(begin_date, end_date))].unstack(0).fillna(method='pad').fillna(method='backfill')
+
+    value = value0
+    current_month = begin_date.month
+    cap_quantity = u_weights.loc[begin_date] / prices.loc[prices.first_valid_index()] * value
+    cap_quantity = cap_quantity.fillna(0)
+    values = {begin_date: value0}
+
+    for date, prices_today in prices.iterrows():
+        if date.month != current_month:
+            # Actualiser les quantités de chaque actif
+            current_month = date.month
+            begin_month_date = pd.Timestamp(year=date.year, month=current_month, day=1)
+            cap_quantity = u_weights.loc[begin_month_date] / prices_today * value
+        prod = cap_quantity * prices_today
+        value = prod.sum()
+        values[date] = value
+
+    return pd.Series(values)
 
 lan = 4
 k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+    print(market)
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
-    #print(m_s_d)
     w_d = optimisation_MV(m_s_d)
     print(w_d)
-    d = valeur_new_indice(market, w_d)
+    d = valeur_new_indice(market, w_d, 1000)
     print(d)
     d.plot()
     plt.show()
