@@ -69,7 +69,7 @@ def optimisateur(mu_sigma_dic):
         prob.solve()
         d[date] = pd.Series(w.value, index=mu.index)
 
-    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    weights = pd.DataFrame(w).stack().rename('Poids', axis='column')
     indices = weights.index
     indices.set_names('Date', level=1, inplace=True)
 
@@ -202,7 +202,7 @@ def optimisation_rob(mu_sigma_dict,lan,k):
 
 #reconstitution du nouvel indice
 def valeur_new_indice(market,d):
-    value_new = d * market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
+    value_new = d * market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))].fillna(method='pad').fillna(method='backfill')
     value_new = value_new.reset_index()
     value_new = value_new.groupby(['Date']).sum()
     return(value_new)
