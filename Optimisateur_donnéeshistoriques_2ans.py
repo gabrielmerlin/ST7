@@ -173,16 +173,22 @@ def optimisation_rob(mu_sigma_dict,lan,k):
         sigma = sigma.to_numpy()
         n = len(sigma)
         omega = np.zeros((n, n))
+        omega_sqrt = np.zeros((n, n))
+
+        zero_indices = []
+
         for i in range(n):
             omega[i][i] = sigma[i][i]
-            if omega[i][i] < 10**(-6):
-                print(omega[i][i])
+            omega_sqrt[i][i] = np.sqrt(sigma[i][i])
+            if mu[i] == 0:
+                zero_indices.append(i)
+
         risk = cp.quad_form(w, omega)
         risk = cp.multiply(lan/2, risk)
-        error = cp.norm(np.linalg.cholesky(omega) * w, 2)   # √ w.t * omega * w
+        error = cp.norm(omega_sqrt * w, 2)   # √ w.t * omega * w
         error = cp.multiply(k, error)
         objective = cp.Maximize((mu.to_numpy() * w) - risk - error)
-        constraints = [w >= 0, cp.sum(w) == 1]
+        constraints = [w >= 0, cp.sum(w) == 1] + [w[i] == 0 for i in zero_indices]
         prob = cp.Problem(objective, constraints)
         prob.solve()
         w_d[date] = pd.Series(w.value, index=mu.index)
@@ -210,10 +216,11 @@ if __name__ == "__main__":
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
     #print(m_s_d)
-    w_d = optimisation_MV(m_s_d)
+    w_d = optimisation_rob(m_s_d, lan, k)
     print(w_d)
-    d=valeur_new_indice(market, w_d)
-    print(mr.VAR(d,0.95))
+    d = valeur_new_indice(market, w_d)
+    print(d)
+    #print(mr.VAR(d, 0.95))
     #print(type(mr.CVAR(d,0.95)))
 
 
