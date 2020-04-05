@@ -133,9 +133,6 @@ def optimisation_MV(mu_sigma_dic):
         try:
             s_inv_mu = np.linalg.solve(sigma.to_numpy(), vect)
             w = s_inv_mu / np.sum(s_inv_mu)
-            for i in range(len(w)):
-                if w[i]<0:
-                    w[i]=0
             dateprime1=date
             dateprime2=dateprime1+datetime.timedelta(days=1)
             while (dateprime1.month==dateprime2.month):
@@ -223,7 +220,6 @@ def valeur_new_indice(market, weights, value0):
     value = value0
     current_month = begin_date.month
     cap_quantity = u_weights.loc[begin_date] / prices.loc[prices.first_valid_index()] * value
-    cap_quantity = cap_quantity.fillna(0)
     values = {begin_date: value0}
 
     for date, prices_today in prices.iterrows():
@@ -247,6 +243,7 @@ if __name__ == "__main__":
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
+    from
     w_d = optimisation_MV(m_s_d)
     print(w_d)
     d = valeur_new_indice(market, w_d, 1000)
