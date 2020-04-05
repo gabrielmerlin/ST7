@@ -145,9 +145,6 @@ def optimisation_MV(mu_sigma_dic):
         except np.linalg.linalg.LinAlgError:
             s_inv_mu = np.linalg.lstsq(sigma.to_numpy(), vect, rcond=None)[0]
             w = s_inv_mu / np.sum(s_inv_mu)
-            for i in range(len(w)):
-                if w[i]<0:
-                    w[i]=0
             dateprime1=date
             dateprime2=dateprime1+datetime.timedelta(days=1)
             while (dateprime1.month==dateprime2.month):
