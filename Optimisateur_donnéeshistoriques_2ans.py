@@ -17,7 +17,7 @@ def mean_covariance_matrix_over_time(market):
     rendements = rendements.iloc[1:]
 
     date_debut = datetime.datetime(2005, 1, 1)
-    date_fin = datetime.datetime(2020, 2, 1)
+    date_fin = datetime.datetime(2006, 2, 1)
 
     mu_sigma_dic = {}
 
@@ -185,7 +185,7 @@ def optimisation_rob(mu_sigma_dict,lan,k):
             if mu[i] == 0:
                 zero_indices.append(i)
 
-        risk = cp.quad_form(w,sigma)
+        risk = cp.quad_form(w, omega)
         risk = cp.multiply(lan/2, risk)
         error = cp.norm(omega_sqrt * w, 2)   # √ w.t * omega * w
         error = cp.multiply(k, error)
@@ -203,9 +203,11 @@ def optimisation_rob(mu_sigma_dict,lan,k):
 
 
 #reconstitution du nouvel indice
-def valeur_new_indice(market,d):
-    value_new = d * market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))].fillna(method='pad').fillna(method='backfill')
-    value_new = value_new.reset_index()
+def valeur_new_indice(market, d):
+    weight_prices = pd.DataFrame(d).join(market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))])
+    weight_prices = weight_prices.fillna(method='pad').fillna(method='backfill')
+    value_new = weight_prices.prod(axis=1)
+    #value_new = value_new.reset_index()
     value_new = value_new.groupby(['Date']).sum()
     return(value_new)
 
@@ -221,7 +223,11 @@ if __name__ == "__main__":
     w_d = optimisation_MV(m_s_d)
     print(w_d)
     d = valeur_new_indice(market, w_d)
-    rend=mr.rendement_moyen(d)
+    print(d)
+    d.plot()
+    plt.show()
+
+    rend = mr.rendement_moyen(d)
     print(rend)
     rend.plot()
     plt.show()

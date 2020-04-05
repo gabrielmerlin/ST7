@@ -46,12 +46,14 @@ SnP = SnP_250(market_caps, market)
 print(SnP)
 SnP.plot()
 
+plt.show()
+
 # Autres indices
-biggest_ind = index_50_biggest(market_caps, market_cap)
+biggest_ind = index_50_biggest(market_caps, market)
 print(biggest_ind)
 biggest_ind.plot()
 
-smallest_ind = index_50_smallest(market_caps, market_cap)
+smallest_ind = index_50_smallest(market_caps, market)
 print(smallest_ind)
 smallest_ind.plot()
 
