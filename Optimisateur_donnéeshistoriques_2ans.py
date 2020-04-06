@@ -347,6 +347,8 @@ def valeur_new_indice(market, weights, value0):
     cap_quantity = u_weights.loc[begin_date] / prices.loc[prices.first_valid_index()] * value
     values = {begin_date: value0}
 
+    date_maudite = []
+
     for date, prices_today in prices.iterrows():
         if date.month != current_month:
             # Actualiser les quantités de chaque actif
@@ -357,7 +359,12 @@ def valeur_new_indice(market, weights, value0):
         computed_value = prod.sum()
         if computed_value < 2 * value:
             value = computed_value
+        else:
+            date_maudite.append(date)
         values[date] = value
+
+    for date in date_maudite:
+        values[date] = np.nan
 
     return pd.Series(values)
 
@@ -400,7 +407,7 @@ if __name__ == "__main__":
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
     #w_d = optimisation_rob(m_s_d, lan, k)
-    w_d = optimisateur(m_s_d)
+    w_d = optimisation_MVO(m_s_d)
     print(w_d)
 
     #w_d.unstack(0).plot()
