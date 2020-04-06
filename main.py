@@ -15,10 +15,50 @@ rend_sans_risque=rend_sans_risque-1
 
 # Chargement des données yfinance
 # La table panda market possède un multi-indice (sedol, date)
-market=pd.read_csv('prices.csv')
-print(market)
-#market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+#market=pd.read_csv('prices.csv')
+#print(market)
+market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
 #print('fin calcul')
+
+SnP = SnP_250(market_caps, market)
+
+big50 = index_50_biggest(market_caps, market)
+big50.plot()
+plt.title("Portefeuille avec les 50 plus grosses capitalisations")
+plt.xlabel("Date")
+plt.ylabel("Valeur")
+
+rendmax = big50.diff()/big50
+plt.figure()
+rendmax.plot()
+plt.title("Portefeuille avec les 50 plus grosses capitalisations")
+plt.xlabel("Date")
+plt.ylabel("Rendement")
+
+min50 = index_50_smallest(market_caps, market)
+plt.figure()
+min50.plot()
+plt.title("Portefeuille avec les 50 plus petites capitalisations")
+plt.xlabel("Date")
+plt.ylabel("Valeur")
+
+rendmin =  min50.diff()/min50
+plt.figure()
+rendmin.plot()
+plt.title("Portefeuille avec les 50 plus petites capitalisations")
+plt.xlabel("Date")
+plt.ylabel("Rendement")
+
+plt.figure()
+SnP = SnP_250(market_caps, market)
+SnP.plot()
+big50.plot()
+min50.plot()
+plt.title("Comparaisons des portefeuilles")
+plt.xlabel("Date")
+plt.ylabel("Valeur")
+plt.legend('S&P 250', '50 plus grosses capitalisations', '50 plus petites capitalisations')
+plt.show()
 
 # S&P 250
 #SnP = SnP_250(market_caps, market)
@@ -43,10 +83,4 @@ print(market)
 #plt.xlabel('days')
 #plt.ylabel('value')
 #plt.show()
-
-
-
-
-
-
 

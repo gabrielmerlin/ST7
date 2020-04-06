@@ -357,11 +357,13 @@ def valeur_new_indice(market, weights, value0):
             cap_quantity = u_weights.loc[begin_month_date] / prices_today * value
         prod = cap_quantity * prices_today
         computed_value = prod.sum()
-        if computed_value < 2 * value:
+        if computed_value < 50 * value:
             value = computed_value
         else:
             date_maudite.append(date)
         values[date] = value
+
+    print(date_maudite)
 
     for date in date_maudite:
         values[date] = np.nan
@@ -379,6 +381,7 @@ def rendements_portfolio(market, weights):
 
     market_rend = prices.diff()/prices
     market_rend = market_rend.iloc[1:]
+    market_rend = market_rend.clip(-5, 5)
 
     prod = market_rend * u_weights
 
@@ -396,6 +399,15 @@ def prices_by_weights(market, weights):
 
     return prod.sum(axis=1)
 
+def pick_clip(values):
+    variations = values.diff() / values
+    variations = variations.iloc[1:].abs()
+
+    for date, variations in variations.iterrows():
+        if variations.max() > 5:
+            values.loc[date] = values.loc[date - pd.Timedelta(days=1)]
+
+    return values
 
 lan = 4
 k = 0.2
@@ -412,14 +424,14 @@ if __name__ == "__main__":
 
     #w_d.unstack(0).plot()
 
-    # plt.figure()
-    # d = rendements_portfolio(market, w_d)
-    # d.plot()
-    # plt.title('Optimisation robuste')
-    # plt.xlabel("Valeur")
-    # plt.ylabel("Date")
-
     #plt.figure()
+    d = valeur_new_indice(market, w_d, 1000)
+    d.plot()
+    plt.title('Optimisation robuste')
+    plt.xlabel("Valeur")
+    plt.ylabel("Date")
+
+    plt.figure()
     #rend = mr.rendement_moyen(d)
     rend = rendements_portfolio(market, w_d)
     print(rend)
