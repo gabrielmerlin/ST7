@@ -23,8 +23,8 @@ def mean_covariance_matrix_over_time(market, selected_sedols):
     rendements = (prices - prices.shift(fill_value=np.nan)) / (prices.shift(fill_value=np.nan))
     rendements = rendements.iloc[1:]
 
-    date_debut = datetime.datetime(2005, 1, 1)
-    date_fin = datetime.datetime(2020, 2, 1)
+    date_debut = pd.Timestamp(2005, 1, 1)
+    date_fin = pd.Timestamp(2020, 2, 1)
 
     mu_sigma_dic = {}
 
