@@ -15,28 +15,34 @@ rend_sans_risque=rend_sans_risque-1
 
 # Chargement des données yfinance
 # La table panda market possède un multi-indice (sedol, date)
-
-market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-print('fin calcul')
+market=pd.read_csv('prices.csv')
+print(market)
+#market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+#print('fin calcul')
 
 # S&P 250
-SnP = SnP_250(market_caps, market)
-rendemen_SnP=mr.rendement_moyen(SnP)
+#SnP = SnP_250(market_caps, market)
+#rendemen_SnP=mr.rendement_moyen(SnP)
  #détermination de la valeur initiale à allouer
-date_initiale=date_intiale()
-valeur_initiale=SnP.loc[date_initiale]
+#date_initiale=date_intiale()
+#valeur_initiale=SnP.loc[date_initiale]
 
 # creation de la matrice historique de variance,covariance
-m_s_d = mean_covariance_matrix_over_time(market)
-print('estimation finie')
+#date_debut = datetime.datetime(2005, 1, 1)
+#m_s_d = mean_covariance_matrix_over_time(market)
+#print('estimation finie')
 #optimisation MVO
-w_d = optimisation_EW(m_s_d)
-d = valeur_new_indice(market, w_d, valeur_initiale)
-d.plot()
-plt.title('optimisation equally weighted')
-plt.xlabel('days')
-plt.ylabel('value')
-plt.show()
+#w_d = optimisation_MV(m_s_d)
+#d = valeur_new_indice(market, w_d, valeur_initiale)
+#print('valeur')
+#rend=mr.rendement_moyen(d)
+#p=mr.VAR(rend,0.95)
+#print(p)
+#d.plot()
+#plt.title('optimisation minimum variance')
+#plt.xlabel('days')
+#plt.ylabel('value')
+#plt.show()
 
 
 
