@@ -13,6 +13,7 @@ def valid_SNP_250_sedols(market_caps):
 
     return selected_sedols
 
+
 def SnP_250(market_caps, market):
     """
     Cette fonction calcule le S&P 250.

@@ -249,11 +249,21 @@ def optimisation_MV(mu_sigma_dic):
             w_dic[dateprime1] = pd.Series(w, index=mu.index)
             #w_dic[date] = pd.Series(w, index=mu.index)
             continue
-    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
-    indices = weights.index
-    indices.set_names('Date', level=1, inplace=True)
+    #weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
+    #indices = weights.index
+    #indices.set_names('Date', level=1, inplace=True)
 
-    return weights.fillna(0)
+    return w_dic
+def rendement(market,selected_sedol,date):
+
+    prices = market['Close'].unstack(0).sort_index()
+    rendements = (prices - prices.shift(fill_value=np.nan)) / (prices.shift(fill_value=np.nan))
+    rendements = rendements.iloc[1:]
+    rend=rendement.loc[date,selected_sedol[date]]
+    return rend
+rend=rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]))
+
+        #rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose())
 
 def optimisation_EW(mu_sigma_dic):
     w_dic = {}
@@ -423,7 +433,9 @@ k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-    print(market)
+    rend=rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]),'2005-01-01')
+    print(rend)
+    #print(market)
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
     m_s_d = mean_covariance_matrix_over_time(market, valid_SNP_250_sedols(import_data_from_json()[0]))
     print("Estimation finie.")

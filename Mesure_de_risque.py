@@ -10,7 +10,7 @@ def rendement_moyen(indice):
     rendements=rendements.dropna()
     return(rendements)
 def shape_ration(indice,Rf):
-    SR=(rendement_moyen(indice)-Rf)/volatility(indice)
+    SR=(rendement_moyen(indice).mean()-Rf.mean())/volatility(indice)
     return(SR)
 
 def VAR(indice,alpha):
