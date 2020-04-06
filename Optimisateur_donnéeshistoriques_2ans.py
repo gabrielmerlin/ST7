@@ -85,7 +85,6 @@ def optimisation_MVO(mu_sigma_dic):
     Cette fonction détermine un portefeuille en utilisant la méthode MVO implémentée avec les formules exactes.
 
     :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
-    :param risk_max : Valeur maximale pour le risque
     :return: Serie Panda associant à chaque multi-indice (sedol, date) le poids convenable
     """
     w_dic = {}
@@ -99,11 +98,11 @@ def optimisation_MVO(mu_sigma_dic):
             #dateprime1=datetime.datetime.strptime(date,'%Y-%m-%d')
             dateprime1 = date
             dateprime2 = dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1.strftime('%Y-%m-%d')
+            while (dateprime1.month == dateprime2.month):
+                date_str = dateprime1.strftime('%Y-%m-%d')
                 w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
+                dateprime1 = dateprime2
+                dateprime2 = dateprime1 + datetime.timedelta(days=1)
             w_dic[dateprime1] = pd.Series(w, index=mu.index)
             continue
         except np.linalg.linalg.LinAlgError:
@@ -114,8 +113,8 @@ def optimisation_MVO(mu_sigma_dic):
             while dateprime1.month==dateprime2.month:
                 #date_str=dateprime1.strftime('%Y-%m-%d')
                 w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
+                dateprime1 = dateprime2
+                dateprime2 = dateprime1 + datetime.timedelta(days=1)
             #date_str=dateprime1.strftime('%Y-%m-%d')
             w_dic[dateprime1] = pd.Series(w, index=mu.index)
             #w_dic[date] = pd.Series(w, index=mu.index)
@@ -166,7 +165,6 @@ def optimisation_ERB(mu_sigma_dic):
     indices.set_names('Date', level=1, inplace=True)
 
     return weights.fillna(0)
-
 
 def optimisation_MV(mu_sigma_dic):
     w_dic = {}
@@ -257,7 +255,7 @@ def optimisation_rob(mu_sigma_dict,lan,k):
         for i in range(n):
             omega[i][i] = sigma[i][i]
             omega_sqrt[i][i] = np.sqrt(sigma[i][i])
-            if mu[i] == 0:
+            if mu[i] <= 0:
                 zero_indices.append(i)
 
         risk = cp.quad_form(w, omega)
@@ -267,8 +265,15 @@ def optimisation_rob(mu_sigma_dict,lan,k):
         objective = cp.Maximize((mu.to_numpy() * w) - risk - error)
         constraints = [w >= 0, cp.sum(w) == 1] + [w[i] == 0 for i in zero_indices]
         prob = cp.Problem(objective, constraints)
-        prob.solve()
-        w_d[date] = pd.Series(w.value, index=mu.index)
+
+        try:
+            prob.solve()
+            w_d[date] = pd.Series(w.value, index=mu.index)
+            continue
+        except cp.error.SolverError:
+            prob.solve(solver='SCS')
+            w_d[date] = pd.Series(w.value, index=mu.index)
+            continue
 
     weights = pd.DataFrame(w_d).stack().rename('Poids', axis='column')
     indices = weights.index
@@ -298,7 +303,6 @@ def valeur_new_indice(market, weights, value0):
     value = value0
     current_month = begin_date.month
     cap_quantity = u_weights.loc[begin_date] / prices.loc[prices.first_valid_index()] * value
-    cap_quantity = cap_quantity.fillna(0)
     values = {begin_date: value0}
 
     for date, prices_today in prices.iterrows():
@@ -316,22 +320,28 @@ def valeur_new_indice(market, weights, value0):
 lan = 4
 k = 0.2
 
-#if __name__ == "__main__":
-    #market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-    #print(market)
+if __name__ == "__main__":
+    market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+    print(market)
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
-    #m_s_d = mean_covariance_matrix_over_time(market)
-    #print("Estimation finie.")
+    m_s_d = mean_covariance_matrix_over_time(market)
+    print("Estimation finie.")
     #w_d = optimisateur(m_s_d)
-    #print(w_d)
-    #d = valeur_new_indice(market, w_d, 1000)
-    #print(d)
-    #d.plot()
-    #plt.show()
-    #rend = mr.rendement_moyen(d)
-    #print(rend)
-    #rend.plot()
-    #plt.show()
+    w_d = optimisation_rob(m_s_d, lan, k)
+    print(w_d)
+
+    w_d.unstack(0).plot()
+
+    plt.figure()
+    d = valeur_new_indice(market, w_d, 1000)
+    print(d)
+    d.plot()
+
+    plt.figure()
+    rend = mr.rendement_moyen(d)
+    print(rend)
+    rend.plot()
+    plt.show()
     #print(mr.VAR(d, 0.95))
     #print(type(mr.CVAR(d,0.95)))
 
