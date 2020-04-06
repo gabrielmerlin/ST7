@@ -254,16 +254,15 @@ def optimisation_MV(mu_sigma_dic):
     #indices.set_names('Date', level=1, inplace=True)
 
     return w_dic
-def rendement(market,selected_sedol,date):
+
+def rendement(market, selected_sedols,date):
 
     prices = market['Close'].unstack(0).sort_index()
     rendements = (prices - prices.shift(fill_value=np.nan)) / (prices.shift(fill_value=np.nan))
-    rendements = rendements.iloc[1:]
-    rend=rendement.loc[date,selected_sedol[date]]
+    rendements = rendements.iloc[1:].transpose().reindex(selected_sedols[pd.Timestamp(year=2005, month=1, day=1)].to_list()).transpose()
+    print(rendements.loc[slice('2004-12-01', '2005-01-30')])
+    rend = rendements.loc[date]
     return rend
-rend=rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]))
-
-        #rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose())
 
 def optimisation_EW(mu_sigma_dic):
     w_dic = {}
@@ -351,7 +350,7 @@ def valeur_new_indice(market, weights, value0):
     """
 
     # Formatage avec les dates en lignes et les sedols en colonne
-    u_weights = weights.unstack(0)
+    u_weights = weights.unstack(0).fillna(0)
     begin_date = u_weights.first_valid_index()
     end_date = u_weights.last_valid_index()
 
@@ -371,11 +370,11 @@ def valeur_new_indice(market, weights, value0):
             begin_month_date = pd.Timestamp(year=date.year, month=current_month, day=1)
             cap_quantity = u_weights.loc[begin_month_date] / prices_today * value
         prod = cap_quantity * prices_today
-        computed_value = prod.sum()
-        if computed_value < 50 * value:
-            value = computed_value
-        else:
-            date_maudite.append(date)
+        value = prod.sum()
+        #if computed_value < 50 * value:
+        #    value = computed_value
+        #else:
+        #    date_maudite.append(date)
         values[date] = value
 
     print(date_maudite)
@@ -391,8 +390,7 @@ def rendements_portfolio(market, weights):
     begin_date = u_weights.first_valid_index()
     end_date = u_weights.last_valid_index()
 
-    prices = market['Close'].sort_index().loc[(slice(None), slice(begin_date, end_date))].unstack(0).fillna(
-        method='pad').fillna(method='backfill')
+    prices = market['Close'].sort_index().loc[(slice(None), slice(begin_date, end_date))].unstack(0).fillna(method='pad').fillna(method='backfill')
 
     market_rend = prices.diff()/prices
     market_rend = market_rend.iloc[1:]
@@ -401,6 +399,23 @@ def rendements_portfolio(market, weights):
     prod = market_rend * u_weights
 
     return prod.sum(axis=1)
+
+def rendement_portfolio2(weights, rendements):
+    """
+    Cette fonction calcule le rendement d'un portefeuille
+    :param weights:
+    :param rendements:
+    :return:
+    """
+    rend_pf = {}
+
+    for date in rendements:
+        begin_month_date = date
+        begin_month_date.day = 1
+        prod = rendements[date] * weights[date]
+        rend_pf[date] = prod.sum()
+
+    return pd.DataFrame(rend_pf)
 
 def prices_by_weights(market, weights):
     u_weights = weights.unstack(0)
@@ -433,7 +448,7 @@ k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-    rend=rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]),'2005-01-01')
+    rend = rendement(market, valid_SNP_250_sedols(import_data_from_json()[0]), pd.Timestamp(year=2005, month=1, day=3))
     print(rend)
     #print(market)
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
@@ -441,7 +456,7 @@ if __name__ == "__main__":
     print("Estimation finie.")
     #w_d = optimisation_rob(m_s_d, lan, k)
     w_d = optimisation_MVO(m_s_d)
-    print(w_d)
+    print(w_d.loc[(slice(None), '2005-01-03')])
 
     #w_d.unstack(0).plot()
 
