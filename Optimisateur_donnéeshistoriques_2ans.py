@@ -240,6 +240,7 @@ def optimisation_EW(mu_sigma_dic):
     indices.set_names('Date', level=1, inplace=True)
 
     return weights.fillna(0)
+
 def optimisation_rob(mu_sigma_dict,lan,k):
     w_d = {}
     for date in mu_sigma_dict:
@@ -266,7 +267,7 @@ def optimisation_rob(mu_sigma_dict,lan,k):
         objective = cp.Maximize((mu.to_numpy() * w) - risk - error)
         constraints = [w >= 0, cp.sum(w) == 1] + [w[i] == 0 for i in zero_indices]
         prob = cp.Problem(objective, constraints)
-        prob.solve(verbose=True)
+        prob.solve()
         w_d[date] = pd.Series(w.value, index=mu.index)
 
     weights = pd.DataFrame(w_d).stack().rename('Poids', axis='column')
@@ -322,9 +323,8 @@ if __name__ == "__main__":
     print("Estimation finie.")
     #w_d = optimisateur(m_s_d)
     w_d = optimisation_rob(m_s_d, lan, k)
-    print(w_d.loc[(slice(None), '2010-05-01')])
 
-    w_d.unstack(0).plot()
+    #w_d.unstack(0).plot()
 
     plt.figure()
     d = valeur_new_indice(market, w_d, 1000)
