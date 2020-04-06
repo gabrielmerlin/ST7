@@ -37,10 +37,10 @@ def mean_covariance_matrix_over_time(market):
         rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1, how='all').fillna(0)
 
         # calcul du vecteur des rendements à l'aide des données historiques
-        mu = rendements_periode.mean()
+        mu = rendements_periode.mean().replace([np.nan, np.inf, - np.inf], 0)
 
         #création de la matrice de covariance à l'aide des données historiques
-        sigma = rendements_periode.cov().fillna(0)
+        sigma = rendements_periode.cov().replace([np.nan, np.inf, - np.inf], 0)
 
         mu_sigma_dic[date_debut] = mu, sigma
 
@@ -204,22 +204,23 @@ def optimisation_MV(mu_sigma_dic):
     return weights.fillna(0)
 
 def optimisation_rob(mu_sigma_dict,lan,k):
-    w_d={}
+    w_d = {}
     for date in mu_sigma_dict:
         mu, sigma = mu_sigma_dict[date]
         w = cp.Variable(mu.size)
         sigma = sigma.to_numpy()
-        n = len(sigma)
+        n = mu.size
         omega = np.zeros((n, n))
         omega_sqrt = np.zeros((n, n))
 
         zero_indices = []
 
         for i in range(n):
-            omega[i][i] = sigma[i][i]
-            omega_sqrt[i][i] = np.sqrt(sigma[i][i])
-            if mu[i] <= 0:
+            if mu[i] <= 0 or sigma[i][i] < 0:
                 zero_indices.append(i)
+            else:
+                omega[i][i] = sigma[i][i]
+                omega_sqrt[i][i] = np.sqrt(sigma[i][i])
 
         risk = cp.quad_form(w, omega)
         risk = cp.multiply(lan/2, risk)
@@ -228,15 +229,8 @@ def optimisation_rob(mu_sigma_dict,lan,k):
         objective = cp.Maximize((mu.to_numpy() * w) - risk - error)
         constraints = [w >= 0, cp.sum(w) == 1] + [w[i] == 0 for i in zero_indices]
         prob = cp.Problem(objective, constraints)
-
-        try:
-            prob.solve()
-            w_d[date] = pd.Series(w.value, index=mu.index)
-            continue
-        except cp.error.SolverError:
-            prob.solve(solver='SCS')
-            w_d[date] = pd.Series(w.value, index=mu.index)
-            continue
+        prob.solve(verbose=True)
+        w_d[date] = pd.Series(w.value, index=mu.index)
 
     weights = pd.DataFrame(w_d).stack().rename('Poids', axis='column')
     indices = weights.index
@@ -291,7 +285,7 @@ if __name__ == "__main__":
     print("Estimation finie.")
     #w_d = optimisateur(m_s_d)
     w_d = optimisation_rob(m_s_d, lan, k)
-    print(w_d)
+    print(w_d.loc[(slice(None), '2010-05-01')])
 
     w_d.unstack(0).plot()
 
