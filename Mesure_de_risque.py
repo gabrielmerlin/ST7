@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import datetime
+
 def volatility(indice):
     return(indice.std())
 def rendement_moyen(indice):
@@ -18,12 +18,10 @@ def VAR(indice,alpha):
    #Var=Var.to_numpy()
    return(Var)
 
-def CVAR(indice,alpha):# ici on utilise plûtot en entrée les rendements des indice
+def CVAR(indice, alpha):# ici on utilise plûtot en entrée les rendements des indice
     var=VAR(indice,alpha)
-    cvar=[indice[indice[0]>var]].mean()
+    cvar= indice[indice > var].mean()
     return(cvar)
-d=datetime.datetime(2020,2,29)
-#print(d+datetime.timedelta(days=1))
 
 def maximum_drawdown(indice):
     return (indice.max()-indice.min()/indice.max())
