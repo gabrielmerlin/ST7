@@ -293,7 +293,7 @@ def valeur_new_indice(market, weights, value0):
     begin_date = u_weights.first_valid_index()
     end_date = u_weights.last_valid_index()
 
-    prices = market['Close'].loc[(slice(None), slice(begin_date, end_date))].unstack(0).fillna(method='pad').fillna(method='backfill')
+    prices = market['Close'].sort_index().loc[(slice(None), slice(begin_date, end_date))].unstack(0).fillna(method='pad').fillna(method='backfill')
 
     value = value0
     current_month = begin_date.month
@@ -307,7 +307,9 @@ def valeur_new_indice(market, weights, value0):
             begin_month_date = pd.Timestamp(year=date.year, month=current_month, day=1)
             cap_quantity = u_weights.loc[begin_month_date] / prices_today * value
         prod = cap_quantity * prices_today
-        value = prod.sum()
+        computed_value = prod.sum()
+        if computed_value < 50 * value:
+            value = computed_value
         values[date] = value
 
     return pd.Series(values)
