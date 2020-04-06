@@ -28,6 +28,10 @@ d=datetime.datetime(2020,2,29)
 def maximum_drawdown(indice):
     return (indice.max()-indice.min())
 
+def tracking_error(indice,benchmarck) :#ici le benchmark est le rendement du portefeuilleSNP
+    Diff=indice-benchmarck
+    return(Diff.std())
+
 
 
 
