@@ -42,7 +42,7 @@ plt.title("Portefeuille avec les 50 plus petites capitalisations")
 plt.xlabel("Date")
 plt.ylabel("Valeur")
 
-rendmin =  min50.diff()/min50
+rendmin = min50.diff()/min50
 plt.figure()
 rendmin.plot()
 plt.title("Portefeuille avec les 50 plus petites capitalisations")
@@ -57,7 +57,7 @@ min50.plot()
 plt.title("Comparaisons des portefeuilles")
 plt.xlabel("Date")
 plt.ylabel("Valeur")
-plt.legend('S&P 250', '50 plus grosses capitalisations', '50 plus petites capitalisations')
+plt.legend(('S&P 250', '50 plus grosses capitalisations', '50 plus petites capitalisations'))
 plt.show()
 
 # S&P 250

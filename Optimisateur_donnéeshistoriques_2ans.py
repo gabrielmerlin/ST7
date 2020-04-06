@@ -5,14 +5,18 @@ import datetime
 import Mesure_de_risque as mr
 import matplotlib.pyplot as plt
 
+from S_and_P_250 import valid_SNP_250_sedols
+from import_market_caps import import_data_from_json
+
 def date_intiale():
     return (datetime.datetime(2004,12,31))
 
-def mean_covariance_matrix_over_time(market):
+def mean_covariance_matrix_over_time(market, selected_sedols):
     """
     Cette fonction estime pour chaque date mu et sigma.
 
     :param market: Dataframe Panda contenant les données de marché
+    :param selected_sedols: Dictionnaire associant à chaque date la liste des sedols à considérer
     :return: Dictionnaire associant à chaque date le couple mu, sigma
     """
     prices = market['Close'].unstack(0).sort_index()
@@ -20,7 +24,7 @@ def mean_covariance_matrix_over_time(market):
     rendements = rendements.iloc[1:]
 
     date_debut = datetime.datetime(2005, 1, 1)
-    date_fin = datetime.datetime(2020, 2, 1)
+    date_fin = datetime.datetime(2006, 2, 1)
 
     mu_sigma_dic = {}
 
@@ -34,13 +38,15 @@ def mean_covariance_matrix_over_time(market):
         debut = datetime.datetime(yeard - 2, monthd, dayd)
         fin = date_debut - datetime.timedelta(days=1)
 
-        rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1, how='all').fillna(0)
+        rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1, how='all').fillna(0).loc[(selected_sedols[date_debut], slice(None))]
+
+        print(rendements_periode)
 
         # calcul du vecteur des rendements à l'aide des données historiques
         mu = rendements_periode.mean().replace([np.nan, np.inf, - np.inf], 0)
 
         #création de la matrice de covariance à l'aide des données historiques
-        sigma = rendements_periode.cov().replace([np.nan, np.inf, - np.inf], 0)
+        sigma = rendements_periode.cov().replace([np.nan, np.inf, - np.inf], 0).loc[(selected_sedols[date_debut], selected_sedols[date_debut])]
 
         mu_sigma_dic[date_debut] = mu, sigma
 
@@ -400,6 +406,11 @@ def prices_by_weights(market, weights):
     return prod.sum(axis=1)
 
 def pick_clip(values):
+    """
+    Cette fonction supprime les variations trop importantes dans values.
+    :param values:
+    :return: Les
+    """
     variations = values.diff() / values
     variations = variations.iloc[1:].abs()
 
@@ -407,7 +418,6 @@ def pick_clip(values):
         if variations.max() > 5:
             values.loc[date] = values.loc[date - pd.Timedelta(days=1)]
 
-    return values
 
 lan = 4
 k = 0.2
@@ -416,7 +426,7 @@ if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
     print(market)
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
-    m_s_d = mean_covariance_matrix_over_time(market)
+    m_s_d = mean_covariance_matrix_over_time(market, valid_SNP_250_sedols(import_data_from_json()[0]))
     print("Estimation finie.")
     #w_d = optimisation_rob(m_s_d, lan, k)
     w_d = optimisation_MVO(m_s_d)

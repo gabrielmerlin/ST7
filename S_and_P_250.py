@@ -2,6 +2,15 @@
 import pandas as pd
 from datetime import datetime
 
+def valid_SNP_250_sedols(market_caps):
+
+    selected_sedols = {}
+
+    for end_month_date, market_caps_at_month in market_caps.items():
+        selected_sedols[end_month_date] = market_caps_at_month.index[market_caps_at_month.isnull().to_numpy()]
+
+    return selected_sedols
+
 def SnP_250(market_caps, market):
     """
     Cette fonction calcule le S&P 250.

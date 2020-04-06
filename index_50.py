@@ -28,9 +28,9 @@ def index_50_biggest(market_caps, market):
             price_end_month = prices_during_month.loc[str(end_month_date)]
             N_share_month = selected_market_caps_at_month / price_end_month
 
-            SnP_month_unreduced = N_share_month * prices_during_month
-            SnP_month = SnP_month_unreduced.agg('sum', axis="columns").rename('S&P250')
-            index_per_month.append(SnP_month)
+            ind_month_unreduced = N_share_month * prices_during_month
+            ind_month = ind_month_unreduced.agg('sum', axis="columns").rename('Big caps 250')
+            index_per_month.append(ind_month)
 
     return pd.concat(index_per_month)
 
@@ -60,8 +60,8 @@ def index_50_smallest(market_caps, market):
             price_end_month = prices_during_month.loc[str(end_month_date)]
             N_share_month = selected_market_caps_at_month / price_end_month
 
-            SnP_month_unreduced = N_share_month * prices_during_month
-            SnP_month = SnP_month_unreduced.agg('sum', axis="columns").rename('S&P250')
-            index_per_month.append(SnP_month)
+            ind_month_unreduced = N_share_month * prices_during_month
+            ind_month = ind_month_unreduced.agg('sum', axis="columns").rename('Small caps 50')
+            index_per_month.append(ind_month)
 
     return pd.concat(index_per_month)
