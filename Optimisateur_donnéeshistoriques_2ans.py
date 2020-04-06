@@ -24,7 +24,7 @@ def mean_covariance_matrix_over_time(market, selected_sedols):
     rendements = rendements.iloc[1:]
 
     date_debut = datetime.datetime(2005, 1, 1)
-    date_fin = datetime.datetime(2006, 2, 1)
+    date_fin = datetime.datetime(2020, 2, 1)
 
     mu_sigma_dic = {}
 
@@ -38,15 +38,14 @@ def mean_covariance_matrix_over_time(market, selected_sedols):
         debut = datetime.datetime(yeard - 2, monthd, dayd)
         fin = date_debut - datetime.timedelta(days=1)
 
-        rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1, how='all').fillna(0).loc[(selected_sedols[date_debut], slice(None))]
-
-        print(rendements_periode)
+        rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1, how='all').fillna(0)
+        rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose()
 
         # calcul du vecteur des rendements à l'aide des données historiques
         mu = rendements_periode.mean().replace([np.nan, np.inf, - np.inf], 0)
 
         #création de la matrice de covariance à l'aide des données historiques
-        sigma = rendements_periode.cov().replace([np.nan, np.inf, - np.inf], 0).loc[(selected_sedols[date_debut], selected_sedols[date_debut])]
+        sigma = rendements_periode.cov().replace([np.nan, np.inf, - np.inf], 0)
 
         mu_sigma_dic[date_debut] = mu, sigma
 

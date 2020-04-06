@@ -7,7 +7,9 @@ def valid_SNP_250_sedols(market_caps):
     selected_sedols = {}
 
     for end_month_date, market_caps_at_month in market_caps.items():
-        selected_sedols[end_month_date] = market_caps_at_month.index[market_caps_at_month.isnull().to_numpy()]
+        begin_month_date = end_month_date + pd.Timedelta(weeks=2)
+        begin_month_date = pd.Timestamp(year=begin_month_date.year, month=begin_month_date.month, day=1)
+        selected_sedols[begin_month_date] = market_caps_at_month.index[market_caps_at_month.isnull().to_numpy()]
 
     return selected_sedols
 
