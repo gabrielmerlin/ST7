@@ -254,19 +254,24 @@ def optimisation_MV(mu_sigma_dic):
     #indices.set_names('Date', level=1, inplace=True)
 
     return w_dic
-def rendement(market,selected_sedol):
-    dic={}
+
+
+def rendement(market, selected_sedol):
+    dic = {}
     prices = market['Close'].unstack(0).sort_index()
+
     rendements = (prices - prices.shift(fill_value=np.nan)) / (prices.shift(fill_value=np.nan))
     rendements = rendements.iloc[1:]
+
     for date in selected_sedol:
-        dateprime1=date
-        dateprime2=dateprime1+pd.timedelta(days=1)
-        while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1
-                rend=rendements.loc[date_str,selected_sedol[date_str]]
-    dic[date]=rend
-    return(rend)
+        end_month_date = pd.Timestamp(date.year, date.month, date.days_in_month)
+
+        rendements_monthly = rendements.loc[slice(date, end_month_date)]
+        rendements_monthly = rendements_monthly.transpose().reindex(selected_sedol[date]).transpose()
+
+        dic[date] = rendements_monthly.to_dict(orient='series')
+
+    return dic
 
 def rend_total(weights,rend):
     dic={}
@@ -413,6 +418,23 @@ def rendements_portfolio(market, weights):
 
     return prod.sum(axis=1)
 
+def rendement_portfolio2(weights, rendements):
+    """
+    Cette fonction calcule le rendement d'un portefeuille
+    :param weights:
+    :param rendements:
+    :return:
+    """
+    rend_pf = {}
+
+    for date in rendements:
+        begin_month_date = date
+        begin_month_date.day = 1
+        prod = rendements[date] * weights[date]
+        rend_pf[date] = prod.sum()
+
+    return pd.DataFrame(rend_pf)
+
 def prices_by_weights(market, weights):
     u_weights = weights.unstack(0)
     begin_date = u_weights.first_valid_index()
@@ -444,7 +466,7 @@ k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-    rend=rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]),'2005-01-01')
+    rend = rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]))
     print(rend)
     #print(market)
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
