@@ -17,7 +17,7 @@ def mean_covariance_matrix_over_time(market):
     rendements = rendements.iloc[1:]
 
     date_debut = datetime.datetime(2005, 1, 1)
-    date_fin = datetime.datetime(2006, 2, 1)
+    date_fin = datetime.datetime(2020, 2, 1)
 
     mu_sigma_dic = {}
 
@@ -175,7 +175,7 @@ def optimisation_rob(mu_sigma_dict,lan,k):
         for i in range(n):
             omega[i][i] = sigma[i][i]
             omega_sqrt[i][i] = np.sqrt(sigma[i][i])
-            if mu[i] == 0:
+            if mu[i] <= 0:
                 zero_indices.append(i)
 
         risk = cp.quad_form(w, omega)
@@ -185,8 +185,15 @@ def optimisation_rob(mu_sigma_dict,lan,k):
         objective = cp.Maximize((mu.to_numpy() * w) - risk - error)
         constraints = [w >= 0, cp.sum(w) == 1] + [w[i] == 0 for i in zero_indices]
         prob = cp.Problem(objective, constraints)
-        prob.solve()
-        w_d[date] = pd.Series(w.value, index=mu.index)
+
+        try:
+            prob.solve()
+            w_d[date] = pd.Series(w.value, index=mu.index)
+            continue
+        except cp.error.SolverError:
+            prob.solve(solver='SCS')
+            w_d[date] = pd.Series(w.value, index=mu.index)
+            continue
 
     weights = pd.DataFrame(w_d).stack().rename('Poids', axis='column')
     indices = weights.index
@@ -239,13 +246,18 @@ if __name__ == "__main__":
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
     m_s_d = mean_covariance_matrix_over_time(market)
     print("Estimation finie.")
-    w_d = optimisation_MVO(m_s_d)
+    #w_d = optimisateur(m_s_d)
+    w_d = optimisation_rob(m_s_d, lan, k)
     print(w_d)
+
+    w_d.unstack(0).plot()
+
+    plt.figure()
     d = valeur_new_indice(market, w_d, 1000)
     print(d)
     d.plot()
-    plt.show()
 
+    plt.figure()
     rend = mr.rendement_moyen(d)
     print(rend)
     rend.plot()
