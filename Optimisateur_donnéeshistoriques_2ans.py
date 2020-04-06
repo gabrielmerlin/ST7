@@ -254,14 +254,25 @@ def optimisation_MV(mu_sigma_dic):
     #indices.set_names('Date', level=1, inplace=True)
 
     return w_dic
-def rendement(market,selected_sedol,date):
-
+def rendement(market,selected_sedol):
+    dic={}
     prices = market['Close'].unstack(0).sort_index()
     rendements = (prices - prices.shift(fill_value=np.nan)) / (prices.shift(fill_value=np.nan))
     rendements = rendements.iloc[1:]
-    rend=rendement.loc[date,selected_sedol[date]]
-    return rend
-rend=rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]))
+    for date in selected_sedol:
+        dateprime1=date
+        dateprime2=dateprime1+pd.timedelta(days=1)
+        while (dateprime1.month==dateprime2.month):
+                date_str=dateprime1
+                rend=rendements.loc[date_str,selected_sedol[date_str]]
+    dic[date]=rend
+    return(rend)
+
+def rend_total(weights,rend):
+    dic={}
+    for date in rend:
+        h=weights[date]*rend[date]
+        dic[date]=h
 
         #rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose())
 
