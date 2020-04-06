@@ -5,6 +5,9 @@ import datetime
 import Mesure_de_risque as mr
 import matplotlib.pyplot as plt
 
+def date_intiale():
+    return (datetime.datetime(2004,12,31))
+
 def mean_covariance_matrix_over_time(market):
     """
     Cette fonction estime pour chaque date mu et sigma.
@@ -276,22 +279,22 @@ def valeur_new_indice(market, weights, value0):
 lan = 4
 k = 0.2
 
-if __name__ == "__main__":
-    market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+#if __name__ == "__main__":
+    #market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
     #print(market)
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
-    m_s_d = mean_covariance_matrix_over_time(market)
-    print("Estimation finie.")
-    w_d = optimisateur(m_s_d)
+    #m_s_d = mean_covariance_matrix_over_time(market)
+    #print("Estimation finie.")
+    #w_d = optimisateur(m_s_d)
     #print(w_d)
-    d = valeur_new_indice(market, w_d, 1000)
-    print(d)
-    d.plot()
-    plt.show()
-    rend = mr.rendement_moyen(d)
+    #d = valeur_new_indice(market, w_d, 1000)
+    #print(d)
+    #d.plot()
+    #plt.show()
+    #rend = mr.rendement_moyen(d)
     #print(rend)
-    rend.plot()
-    plt.show()
+    #rend.plot()
+    #plt.show()
     #print(mr.VAR(d, 0.95))
     #print(type(mr.CVAR(d,0.95)))
 
