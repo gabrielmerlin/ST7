@@ -17,6 +17,7 @@ rend_sans_risque=rend_sans_risque-1
 # La table panda market possède un multi-indice (sedol, date)
 
 market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
+print('fin calcul')
 
 # S&P 250
 SnP = SnP_250(market_caps, market)
@@ -25,12 +26,17 @@ rendemen_SnP=mr.rendement_moyen(SnP)
 date_initiale=date_intiale()
 valeur_initiale=SnP.loc[date_initiale]
 
-#w_d = optimisateur(m_s_d)
-    #print(w_d)
-    #d = valeur_new_indice(market, w_d, 1000)
-    #print(d)
-    #d.plot()
-    #plt.show()
+# creation de la matrice historique de variance,covariance
+m_s_d = mean_covariance_matrix_over_time(market)
+print('estimation finie')
+#optimisation MVO
+w_d = optimisateur(m_s_d)
+d = valeur_new_indice(market, w_d, valeur_initiale)
+d.plot()
+plt.title('optimisation MVO avec contrainte')
+plt.xlabel('days')
+plt.ylabel('value')
+plt.show()
 
 
 
