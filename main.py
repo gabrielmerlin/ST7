@@ -30,10 +30,10 @@ valeur_initiale=SnP.loc[date_initiale]
 m_s_d = mean_covariance_matrix_over_time(market)
 print('estimation finie')
 #optimisation MVO
-w_d = optimisateur(m_s_d)
+w_d = optimisation_EW(m_s_d)
 d = valeur_new_indice(market, w_d, valeur_initiale)
 d.plot()
-plt.title('optimisation MVO avec contrainte')
+plt.title('optimisation equally weighted')
 plt.xlabel('days')
 plt.ylabel('value')
 plt.show()
