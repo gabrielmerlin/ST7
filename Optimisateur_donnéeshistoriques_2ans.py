@@ -2,10 +2,10 @@ import numpy as np
 import cvxpy as cp
 import pandas as pd
 import datetime
-import Mesure_de_risque as mr
+from Mesure_de_risque import *
 import matplotlib.pyplot as plt
 
-from S_and_P_250 import valid_SNP_250_sedols
+from S_and_P_250 import valid_SNP_250_sedols, SnP_250
 from import_market_caps import import_data_from_json
 
 def date_intiale():
@@ -23,8 +23,8 @@ def mean_covariance_matrix_over_time(market, selected_sedols):
     rendements = (prices - prices.shift(fill_value=np.nan)) / (prices.shift(fill_value=np.nan))
     rendements = rendements.iloc[1:]
 
-    date_debut = pd.Timestamp(2005, 1, 1)
-    date_fin = pd.Timestamp(2020, 2, 1)
+    date_debut = datetime.datetime(2005, 1, 1)
+    date_fin = datetime.datetime(2020, 2, 1)
 
     mu_sigma_dic = {}
 
@@ -39,7 +39,7 @@ def mean_covariance_matrix_over_time(market, selected_sedols):
         fin = date_debut - datetime.timedelta(days=1)
 
         rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1, how='all').fillna(0)
-        rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose()
+        #rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose()
 
         # calcul du vecteur des rendements à l'aide des données historiques
         mu = rendements_periode.mean().replace([np.nan, np.inf, - np.inf], 0)
@@ -131,131 +131,6 @@ def optimisation_MVO(mu_sigma_dic):
 
     return weights.fillna(0)
 
-def optimisation_MVO2(mu_sigma_dic):
-    """
-    Cette fonction détermine un portefeuille en utilisant la méthode MVO implémentée avec les formules exactes.
-
-    :param mu_sigma_dic: Dictionnaire associant à chaque date le couple mu, sigma
-    :return: Serie Panda associant à chaque multi-indice (sedol, date) le poids convenable
-    """
-    w_dic = {}
-
-    for date in mu_sigma_dic:
-        mu, sigma = mu_sigma_dic[date]
-
-        try:
-            s_inv_mu = np.linalg.solve(sigma.to_numpy(), mu.to_numpy())
-            w = s_inv_mu / np.sum(s_inv_mu)
-            #dateprime1=datetime.datetime.strptime(date,'%Y-%m-%d')
-            dateprime1 = date
-            dateprime2 = dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month == dateprime2.month):
-                date_str = dateprime1.strftime('%Y-%m-%d')
-                w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1 = dateprime2
-                dateprime2 = dateprime1 + datetime.timedelta(days=1)
-            w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            continue
-        except np.linalg.linalg.LinAlgError:
-            s_inv_mu = np.linalg.lstsq(sigma.to_numpy(), mu.to_numpy(), rcond=None)[0]
-            w = s_inv_mu / np.sum(s_inv_mu)
-            dateprime1=date
-            dateprime2=dateprime1+datetime.timedelta(days=1)
-            while dateprime1.month==dateprime2.month:
-                #date_str=dateprime1.strftime('%Y-%m-%d')
-                w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1 = dateprime2
-                dateprime2 = dateprime1 + datetime.timedelta(days=1)
-            #date_str=dateprime1.strftime('%Y-%m-%d')
-            w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            #w_dic[date] = pd.Series(w, index=mu.index)
-            continue
-
-    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
-    indices = weights.index
-    indices.set_names('Date', level=1, inplace=True)
-
-    return weights.fillna(0)
-
-def optimisation_ERB(mu_sigma_dic):
-    w_dic = {}
-    for date in mu_sigma_dic:
-        mu, sigma = mu_sigma_dic[date]
-        sigma=sigma.to_numpy()
-        n = len(sigma)
-        Lambda=np.zeros((n,n))
-        for i in range(n):
-            Lambda[i][i]=sigma[i][i]
-            vect = np.ones(n)
-        try:
-            s_inv_mu = np.linalg.solve(Lambda, vect)
-            w = s_inv_mu / np.sum(s_inv_mu)
-            dateprime1=date
-            dateprime2=dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1.strftime('%Y-%m-%d')
-                w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
-            w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            continue
-        except np.linalg.linalg.LinAlgError:
-            s_inv_mu = np.linalg.lstsq(Lambda, vect, rcond=None)[0]
-            w = s_inv_mu / np.sum(s_inv_mu)
-            dateprime1=date
-            dateprime2=dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1.strftime('%Y-%m-%d')
-                w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
-            w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            #w_dic[date] = pd.Series(w, index=mu.index)
-            continue
-    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
-    indices = weights.index
-    indices.set_names('Date', level=1, inplace=True)
-
-    return weights.fillna(0)
-
-def optimisation_MV(mu_sigma_dic):
-    w_dic = {}
-    for date in mu_sigma_dic:
-        mu, sigma = mu_sigma_dic[date]
-        n = len(sigma)
-        vect = np.ones(n)
-        try:
-            s_inv_mu = np.linalg.solve(sigma.to_numpy(), vect)
-            w = s_inv_mu / np.sum(s_inv_mu)
-            dateprime1=date
-            dateprime2=dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1.strftime('%Y-%m-%d')
-                w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
-            w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            continue
-        except np.linalg.linalg.LinAlgError:
-            s_inv_mu = np.linalg.lstsq(sigma.to_numpy(), vect, rcond=None)[0]
-            w = s_inv_mu / np.sum(s_inv_mu)
-            dateprime1=date
-            dateprime2=dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1.strftime('%Y-%m-%d')
-                w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
-            w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            #w_dic[date] = pd.Series(w, index=mu.index)
-            continue
-    #weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
-    #indices = weights.index
-    #indices.set_names('Date', level=1, inplace=True)
-
-    return w_dic
-
-
 def rendement(market, selected_sedol):
     dic = {}
     prices = market['Close'].unstack(0).sort_index()
@@ -280,44 +155,6 @@ def rend_total(weights,rend):
         dic[date]=h
 
         #rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose())
-
-def optimisation_EW(mu_sigma_dic):
-    w_dic = {}
-    for date in mu_sigma_dic:
-        mu, sigma = mu_sigma_dic[date]
-        n = len(sigma)
-        Lambda=np.identity(n)
-        vect = np.ones(n)
-        try:
-            s_inv_mu = np.linalg.solve(Lambda, vect)
-            w = s_inv_mu / np.sum(s_inv_mu)
-            dateprime1=date
-            dateprime2=dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1.strftime('%Y-%m-%d')
-                w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
-            w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            continue
-        except np.linalg.linalg.LinAlgError:
-            s_inv_mu = np.linalg.lstsq(Lambda, vect, rcond=None)[0]
-            w = s_inv_mu / np.sum(s_inv_mu)
-            dateprime1=date
-            dateprime2=dateprime1+datetime.timedelta(days=1)
-            while (dateprime1.month==dateprime2.month):
-                date_str=dateprime1.strftime('%Y-%m-%d')
-                w_dic[dateprime1] = pd.Series(w, index=mu.index)
-                dateprime1=dateprime2
-                dateprime2=dateprime1+datetime.timedelta(days=1)
-            w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            #w_dic[date] = pd.Series(w, index=mu.index)
-            continue
-    weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
-    indices = weights.index
-    indices.set_names('Date', level=1, inplace=True)
-
-    return weights.fillna(0)
 
 def optimisation_rob(mu_sigma_dict,lan,k):
     w_d = {}
@@ -378,8 +215,6 @@ def valeur_new_indice(market, weights, value0):
     cap_quantity = u_weights.loc[begin_date] / prices.loc[prices.first_valid_index()] * value
     values = {begin_date: value0}
 
-    date_maudite = []
-
     for date, prices_today in prices.iterrows():
         if date.month != current_month:
             # Actualiser les quantités de chaque actif
@@ -387,17 +222,7 @@ def valeur_new_indice(market, weights, value0):
             begin_month_date = pd.Timestamp(year=date.year, month=current_month, day=1)
             cap_quantity = u_weights.loc[begin_month_date] / prices_today * value
         prod = cap_quantity * prices_today
-        computed_value = prod.sum()
-        if computed_value < 50 * value:
-            value = computed_value
-        else:
-            date_maudite.append(date)
-        values[date] = value
-
-    print(date_maudite)
-
-    for date in date_maudite:
-        values[date] = np.nan
+        values[date] = prod.sum()
 
     return pd.Series(values)
 
@@ -456,9 +281,14 @@ def pick_clip(values):
     variations = values.diff() / values
     variations = variations.iloc[1:].abs()
 
-    for date, variations in variations.iterrows():
-        if variations.max() > 5:
-            values.loc[date] = values.loc[date - pd.Timedelta(days=1)]
+    last_values = values[0]
+
+    for date, variations in variations.items():
+        if np.max(variations) > 1.5:
+            values[date] = last_values
+            print(last_values, values)
+        else:
+            last_values = values.loc[date]
 
 
 lan = 4
@@ -466,29 +296,91 @@ k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-    rend = rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]))
-    print(rend)
+    #rend = rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]))
+    #print(rend)
     #print(market)
     #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
-    m_s_d = mean_covariance_matrix_over_time(market, valid_SNP_250_sedols(import_data_from_json()[0]))
+    market_caps, Rf = import_data_from_json()
+    Rf = Rf - 1
+    print(Rf)
+
+    m_s_d = mean_covariance_matrix_over_time(market, valid_SNP_250_sedols(market_caps))
     print("Estimation finie.")
     #w_d = optimisation_rob(m_s_d, lan, k)
+    #w_d = optimisation_ERB(m_s_d)
+    #print(w_d)
+    SnP = SnP_250(market_caps, market)
+    print(SnP)
+
+    w_d = optimisation_ERB(m_s_d)
+    print("ERB")
+    rend = rendements_portfolio(market, w_d)
+    print("Vol:", volatility(rend))
+    print("Mean rend", rendement_moyen(rend))
+    print("SR", shape_ration(rend, Rf))
+    print("Var", VAR(rend, 0.95))
+    print("CVaR", CVAR(rend, 0.95))
+    print("Tracking", tracking_error(rend, SnP))
+
+    w_d = optimisation_EW(m_s_d)
+    print("EW")
+    rend = rendements_portfolio(market, w_d)
+    print("Vol:", volatility(rend))
+    print("Mean rend", rendement_moyen(rend))
+    print("SR", shape_ration(rend, Rf))
+    print("Var", VAR(rend, 0.95))
+    print("CVaR", CVAR(rend, 0.95))
+    print("Tracking", tracking_error(rend, SnP))
+
     w_d = optimisation_MVO(m_s_d)
-    print(w_d)
+    print("MVO")
+    rend = rendements_portfolio(market, w_d)
+    print("Vol:", volatility(rend))
+    print("Mean rend", rendement_moyen(rend))
+    print("SR", shape_ration(rend, Rf))
+    print("Var", VAR(rend, 0.95))
+    print("CVaR", CVAR(rend, 0.95))
+    print("Tracking", tracking_error(rend, SnP))
+
+    w_d = optimisation_MV(m_s_d)
+    print("MV")
+    rend = rendements_portfolio(market, w_d)
+    print("Vol:", volatility(rend))
+    print("Mean rend", rendement_moyen(rend))
+    print("SR", shape_ration(rend, Rf))
+    print("Var", VAR(rend, 0.95))
+    print("CVaR", CVAR(rend, 0.95))
+    print("Tracking", tracking_error(rend, SnP))
+
+    w_d = optimisation_rob(m_s_d, lan, k)
+    print("rob")
+    rend = rendements_portfolio(market, w_d)
+    print("Vol:", volatility(rend))
+    print("Mean rend", rendement_moyen(rend))
+    print("SR", shape_ration(rend, Rf))
+    print("Var", VAR(rend, 0.95))
+    print("CVaR", CVAR(rend, 0.95))
+    print("Tracking", tracking_error(rend, SnP))
+
+    exit()
 
     #w_d.unstack(0).plot()
 
     #plt.figure()
-    d = valeur_new_indice(market, w_d, 1000)
+    d = valeur_new_indice(market, w_d, 8450064)
+    pick_clip(d)
     d.plot()
     plt.title('Optimisation robuste')
-    plt.xlabel("Valeur")
-    plt.ylabel("Date")
+    plt.ylabel("Valeur")
+    plt.xlabel("Date")
 
     plt.figure()
     #rend = mr.rendement_moyen(d)
     rend = rendements_portfolio(market, w_d)
-    print(rend)
+    pick_clip(rend)
+    plt.title('Optimisation robuste')
+    plt.ylabel("Rendement")
+    plt.xlabel("Date")
     rend.plot()
     plt.show()
     #print(mr.VAR(d, 0.95))

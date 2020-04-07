@@ -3,6 +3,11 @@ import pandas as pd
 from datetime import datetime
 
 def valid_SNP_250_sedols(market_caps):
+    """
+    Cette fonction extrait les sedols du S&P250 pour chaque mois
+    :param market_caps: Tableau Panda avec en ligne les dates et en colonne la capitalisation (S&P 250) par sedol
+    :return:            Série Panda associant à chaque date les sedols correspondant
+    """
 
     selected_sedols = {}
 
