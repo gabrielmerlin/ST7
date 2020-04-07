@@ -39,7 +39,7 @@ def mean_covariance_matrix_over_time(market, selected_sedols):
         fin = date_debut - datetime.timedelta(days=1)
 
         rendements_periode = rendements.loc[slice(str(debut), str(fin))].dropna(axis=1, how='all').fillna(0)
-        #rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose()
+        rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose()
 
         # calcul du vecteur des rendements à l'aide des données historiques
         mu = rendements_periode.mean().replace([np.nan, np.inf, - np.inf], 0)
@@ -100,11 +100,9 @@ def optimisation_MVO(mu_sigma_dic):
         try:
             s_inv_mu = np.linalg.solve(sigma.to_numpy(), mu.to_numpy())
             w = s_inv_mu / np.sum(s_inv_mu)
-            #dateprime1=datetime.datetime.strptime(date,'%Y-%m-%d')
             dateprime1 = date
             dateprime2 = dateprime1+datetime.timedelta(days=1)
             while (dateprime1.month == dateprime2.month):
-                date_str = dateprime1.strftime('%Y-%m-%d')
                 w_dic[dateprime1] = pd.Series(w, index=mu.index)
                 dateprime1 = dateprime2
                 dateprime2 = dateprime1 + datetime.timedelta(days=1)
@@ -116,13 +114,10 @@ def optimisation_MVO(mu_sigma_dic):
             dateprime1=date
             dateprime2=dateprime1+datetime.timedelta(days=1)
             while dateprime1.month==dateprime2.month:
-                #date_str=dateprime1.strftime('%Y-%m-%d')
                 w_dic[dateprime1] = pd.Series(w, index=mu.index)
                 dateprime1 = dateprime2
                 dateprime2 = dateprime1 + datetime.timedelta(days=1)
-            #date_str=dateprime1.strftime('%Y-%m-%d')
             w_dic[dateprime1] = pd.Series(w, index=mu.index)
-            #w_dic[date] = pd.Series(w, index=mu.index)
             continue
 
     weights = pd.DataFrame(w_dic).stack().rename('Poids', axis='column')
@@ -153,8 +148,6 @@ def rend_total(weights,rend):
     for date in rend:
         h=weights[date]*rend[date]
         dic[date]=h
-
-        #rendements_periode = rendements_periode.transpose().reindex(selected_sedols[date_debut].to_list()).transpose())
 
 def optimisation_rob(mu_sigma_dict,lan,k):
     w_d = {}
@@ -296,19 +289,12 @@ k = 0.2
 
 if __name__ == "__main__":
     market = pd.read_pickle("data_yfinance.pkl.gz", compression="gzip").reindex()
-    #rend = rendement(market,valid_SNP_250_sedols(import_data_from_json()[0]))
-    #print(rend)
-    #print(market)
-    #m=market['Close'].loc[(slice(None), slice('2005-01-01','2020-01-01'))]
     market_caps, Rf = import_data_from_json()
     Rf = Rf - 1
     print(Rf)
 
     m_s_d = mean_covariance_matrix_over_time(market, valid_SNP_250_sedols(market_caps))
     print("Estimation finie.")
-    #w_d = optimisation_rob(m_s_d, lan, k)
-    #w_d = optimisation_ERB(m_s_d)
-    #print(w_d)
     SnP = SnP_250(market_caps, market)
     print(SnP)
 
@@ -362,11 +348,6 @@ if __name__ == "__main__":
     print("CVaR", CVAR(rend, 0.95))
     print("Tracking", tracking_error(rend, SnP))
 
-    exit()
-
-    #w_d.unstack(0).plot()
-
-    #plt.figure()
     d = valeur_new_indice(market, w_d, 8450064)
     pick_clip(d)
     d.plot()
@@ -375,7 +356,6 @@ if __name__ == "__main__":
     plt.xlabel("Date")
 
     plt.figure()
-    #rend = mr.rendement_moyen(d)
     rend = rendements_portfolio(market, w_d)
     pick_clip(rend)
     plt.title('Optimisation robuste')
@@ -383,7 +363,4 @@ if __name__ == "__main__":
     plt.xlabel("Date")
     rend.plot()
     plt.show()
-    #print(mr.VAR(d, 0.95))
-    #print(type(mr.CVAR(d,0.95)))
-
 
